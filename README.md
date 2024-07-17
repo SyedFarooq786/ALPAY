@@ -68,4 +68,6 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 Support
 
-For support, contact Syed Farooq at syedfarooqfk786@gmail.com        
+For support, contact Syed Farooq at syedfarooqfk786@gmail.com
+
+For Improvement contact above.
