@@ -1,0 +1,28 @@
+# Node dependencies
+/node_modules
+
+# Environment variables
+
+# Android and iOS build folders
+/android/app/build
+/ios/build
+/android/build
+/ios/Pods
+
+# IDE/Editor specific files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs
+*.log
+
+# Dependency lock files
+yarn.lock
+package-lock.json
+
+# Generated files
+/ios/*.xcodeproj
+/ios/*.xcworkspace
+/android/*.keystore
