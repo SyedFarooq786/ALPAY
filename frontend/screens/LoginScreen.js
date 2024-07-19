@@ -199,10 +199,10 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: 'red',
-    fontSize: 12,
+    fontSize: 14,
     textAlign: 'left',
-    marginTop: 5,
-    marginLeft: 10,
+    marginTop: 6,
+    marginLeft: 9,
   },
 });
 

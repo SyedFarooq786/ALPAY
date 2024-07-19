@@ -56,6 +56,15 @@ AL-PAY is a secure and user-friendly payment application built with React Native
 	•	iOS:
      npx react-native run-ios
 
+5.  **IF you Face any issue while running the code Follow the below setps**
+    ```bash
+    cd /Users/syed/al-pay/frontend
+    rm -rf node_modules
+    rm package-lock.json
+    npm install --legacy-peer-deps
+    cd android
+    ./gradlew clean
+    cd ..
 Usage
 
 	1.	Register/Login: Create an account or log in securely.

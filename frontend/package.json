@@ -28,6 +28,9 @@
     "react-native-screens": "^3.32.0",
     "react-native-vector-icons": "^10.1.0"
   },
+  "resolutions": {
+    "react-art": "16.14.0"
+  },
   "devDependencies": {
     "@babel/core": "^7.20.0",
     "@babel/preset-env": "^7.20.0",
