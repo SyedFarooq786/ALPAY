@@ -1,16 +1,16 @@
-// LoginScreen.js
-
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
+import React, { useState, useEffect, useContext } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
 import CountryPicker from 'react-native-country-picker-modal';
 import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
-import PhoneNumber from 'libphonenumber-js'; // Assuming you have already installed libphonenumber-js
+import { LocationContext } from '../LocationContext';
+import PhoneNumber from 'libphonenumber-js';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const [countryCode, setCountryCode] = useState('IN');
-  const [callingCode, setCallingCode] = useState('91');
+  const { location } = useContext(LocationContext);
+  const [countryCode, setCountryCode] = useState(location.countryCode);
+  const [callingCode, setCallingCode] = useState(location.callingCode);
   const [phoneNumber, setPhoneNumber] = useState('');
   const [phoneNumberError, setPhoneNumberError] = useState('');
 
@@ -23,8 +23,13 @@ const LoginScreen = () => {
   };
 
   const onSelectCountry = (country) => {
-    setCountryCode(country.cca2);
-    setCallingCode(country.callingCode[0]);
+    console.log(country); // Add this line
+    if (country && country.callingCode && country.callingCode.length > 0) {
+      setCountryCode(country.cca2 );
+      setCallingCode(country.callingCode[0]);
+    } else {
+      console.error("Selected country data is not valid", country);
+    }
   };
 
   const validatePhoneNumber = (number) => {
@@ -45,7 +50,7 @@ const LoginScreen = () => {
     <View style={styles.container}>
       <Animatable.Image
         animation="fadeInLeft"
-        source={require('/Users/syed/al-pay/frontend/1.png')} // Replace with your local image path
+        source={require('/Users/syed/al-pay/frontend/1.png')}
         style={styles.logo}
       />
       <View style={styles.textContainer}>
@@ -131,7 +136,7 @@ const styles = StyleSheet.create({
   },
   inputContainer: {
     width: '100%',
-    height: 48, // Set height of the input container to 48
+    height: 48,
     marginBottom: 10,
   },
   inputBorder: {
@@ -146,7 +151,7 @@ const styles = StyleSheet.create({
   },
   countryPicker: {
     marginRight: 10,
-    borderWidth: 0, // Remove border from country picker
+    borderWidth: 0,
     borderRadius: 5,
     paddingVertical: 8,
     paddingHorizontal: 10,
@@ -184,7 +189,7 @@ const styles = StyleSheet.create({
   },
   footerContainer: {
     position: 'absolute',
-    bottom: 68, // Adjusted to give space for the footer text
+    bottom: 68,
     width: '100%',
     paddingHorizontal: 16,
   },

@@ -1,13 +1,36 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image } from 'react-native';
 import axios from 'axios';
 import { Picker } from '@react-native-picker/picker';
+import ImagePicker from 'react-native-image-picker';
 
 const RegisterScreen = ({ navigation, route }) => {
   const { phoneNumber, callingCode } = route.params;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [selectedCurrency, setSelectedCurrency] = useState('INR');
+  const [profileImage, setProfileImage] = useState(null);
+
+  const handleChooseImage = () => {
+    const options = {
+      title: 'Select Image',
+      storageOptions: {
+        skipBackup: true,
+        path: 'images',
+      },
+    };
+
+    ImagePicker.showImagePicker(options, (response) => {
+      if (response.didCancel) {
+        console.log('User cancelled image picker');
+      } else if (response.error) {
+        console.log('ImagePicker Error: ', response.error);
+      } else {
+        const source = { uri: response.uri };
+        setProfileImage(source);
+      }
+    });
+  };
 
   const handleContinue = async () => {
     try {
@@ -18,11 +41,11 @@ const RegisterScreen = ({ navigation, route }) => {
         firstName,
         lastName,
         currencyCode: selectedCurrency,
+        profileImage, // Include the profile image in the payload if needed
       });
 
       console.log('Saved to database:', response.data);
 
-      // Navigate to the next screen after successful save
       navigation.navigate('Payment');
     } catch (error) {
       if (error.response) {
@@ -70,6 +93,14 @@ const RegisterScreen = ({ navigation, route }) => {
         <Picker.Item label="US Dollar (USD)" value="USD" />
       </Picker>
 
+      <TouchableOpacity style={styles.imageButton} onPress={handleChooseImage}>
+        <Text style={styles.imageButtonText}>Choose Image</Text>
+      </TouchableOpacity>
+
+      {profileImage && (
+        <Image source={profileImage} style={styles.profileImage} />
+      )}
+
       <TouchableOpacity style={styles.button} onPress={handleContinue}>
         <Text style={styles.buttonText}>Continue</Text>
       </TouchableOpacity>
@@ -112,6 +143,23 @@ const styles = StyleSheet.create({
   picker: {
     width: '100%',
     height: 40,
+    marginBottom: 20,
+  },
+  imageButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+    marginBottom: 20,
+  },
+  imageButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     marginBottom: 20,
   },
 });

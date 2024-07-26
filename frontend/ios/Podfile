@@ -38,3 +38,7 @@ target 'frontend' do
     )
   end
 end
+
+pod 'RNPermissions', :path => '../node_modules/react-native-permissions'
+
+pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'
