@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react
 import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
 import { PERMISSIONS, requestMultiple } from 'react-native-permissions';
-import { LocationContext } from '/Users/syed/al-pay/frontend/LocationContext.js'; // Ensure the correct path
+import { LocationContext } from './LocationContext.js'; // Ensure the correct path
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -14,16 +14,41 @@ const HomeScreen = () => {
   }, []);
 
   const requestPermissions = async () => {
+    // try {
+    //   // Requesting permissions
+    //   const granted = await requestMultiple([
+    //     PERMISSIONS.ANDROID.CAMERA,
+    //     PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
+    //     PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
+    //     PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+    //     PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
+    //     PERMISSIONS.ANDROID.READ_CONTACTS,
+    //   ]);
     try {
+      let permissionsToRequest;
+
+      if (Platform.OS === 'android') {
+        permissionsToRequest = [
+          PERMISSIONS.ANDROID.CAMERA,
+          PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
+          PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
+          PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
+          PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
+          PERMISSIONS.ANDROID.READ_CONTACTS,
+        ];
+      } else if (Platform.OS === 'ios') {
+        permissionsToRequest = [
+          PERMISSIONS.IOS.CAMERA,
+          PERMISSIONS.IOS.PHOTO_LIBRARY,
+          PERMISSIONS.IOS.LOCATION_WHEN_IN_USE,
+          PERMISSIONS.IOS.CONTACTS,
+        ];
+      }
+
       // Requesting permissions
-      const granted = await requestMultiple([
-        PERMISSIONS.ANDROID.CAMERA,
-        PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
-        PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
-        PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-        PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
-        PERMISSIONS.ANDROID.READ_CONTACTS,
-      ]);
+      const granted = await requestMultiple(permissionsToRequest);
+
+
 
       console.log('Permissions granted:', granted);
 

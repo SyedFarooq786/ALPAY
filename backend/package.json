@@ -15,6 +15,8 @@
     "cors": "^2.8.5",
     "express": "^4.19.2",
     "mongoose": "^8.5.0",
+    "multer": "^1.4.5-lts.1",
+    "multer-storage-cloudinary": "^4.0.0",
     "react-native-picker-select": "^9.1.3",
     "twilio": "^5.2.2"
   }

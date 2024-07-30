@@ -3,7 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Platform } 
 import CountryPicker from 'react-native-country-picker-modal';
 import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
-import { LocationContext } from '../LocationContext';
+import { LocationContext } from './LocationContext';
 import PhoneNumber from 'libphonenumber-js';
 
 const LoginScreen = () => {

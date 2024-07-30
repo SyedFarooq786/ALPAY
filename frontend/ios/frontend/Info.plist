@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>frontend</string>
+	<string>World-Pay</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -48,5 +48,23 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>NSCameraUsageDescription</key>
+<string>We need access to your camera to take photos.</string>
+
+<key>NSPhotoLibraryUsageDescription</key>
+<string>We need access to your photo library to upload photos.</string>
+
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>We need access to your location to provide location-based services.</string>
+
+<key>NSContactsUsageDescription</key>
+<string>We need access to your contacts to enhance your experience.</string>
+
+<key>NSFaceIDUsageDescription</key>
+<string>We need access to Face ID for authentication purposes.</string>
+
+<key>NSBiometricUsageDescription</key>
+<string>We need access to biometric authentication for security purposes.</string>
+
 </dict>
 </plist>

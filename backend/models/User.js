@@ -7,7 +7,8 @@ const userSchema = new mongoose.Schema({
   callingCode: { type: String, required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  currencyCode: { type: String, required: true }
+  currencyCode: { type: String, required: true },
+  profileImage: { type: String }
 });
 
 const User = mongoose.model('User', userSchema);

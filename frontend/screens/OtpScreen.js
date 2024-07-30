@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, Modal, TouchableWithoutFeedback, Image } from 'react-native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const OtpScreen = ({ route, navigation }) => {
   const { phoneNumber, callingCode } = route.params;
@@ -47,10 +48,12 @@ const OtpScreen = ({ route, navigation }) => {
         return;
       }
 
-      const response = await axios.get(`http://192.168.4.18:5000/api/auth/check-user-exists/${phoneNumber}`);
+      const response = await axios.get(`http://192.168.1.15:5000/api/auth/check-user-exists/${phoneNumber}`);
       const { userExists } = response.data;
 
       if (userExists) {
+        await AsyncStorage.setItem('user', JSON.stringify({ phoneNumber }));
+
         navigation.navigate('Payment');
       } else {
         navigation.navigate('Register', { phoneNumber, callingCode });
@@ -120,11 +123,11 @@ const OtpScreen = ({ route, navigation }) => {
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.optionContainer}>
-                  <Image source={require('/Users/syed/al-pay/frontend/change.png')} style={styles.optionImage} />
+                  <Image source={require('/Users/syed/al-pay/frontend/1.png')} style={styles.optionImage} />
                   <Text style={styles.optionText}>Change Mobile Number</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={handleResendOtp} style={styles.optionContainer}>
-                  <Image source={require('/Users/syed/al-pay/frontend/resend.png')} style={styles.optionImage} />
+                  <Image source={require('/Users/syed/al-pay/frontend/1.png')} style={styles.optionImage} />
                   <Text style={styles.optionText}>Resend OTP</Text>
                 </TouchableOpacity>
               </View>
@@ -257,7 +260,6 @@ const styles = StyleSheet.create({
   closeButton: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '',
   },
   optionContainer: {
     flexDirection: 'row',
@@ -274,7 +276,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     alignItems: 'center',
     textAlign: 'left',
-    color: '',
-},
+  },
 });
+
 export default OtpScreen;
