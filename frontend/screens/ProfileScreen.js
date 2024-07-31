@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,6 +9,9 @@ const ProfileScreen = ({ navigation }) => {
   const [profileImage, setProfileImage] = useState(null);
   const [userData, setUserData] = useState({});
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [callingCode, setCallingCode] = useState('');
+  const [currencyName, setCurrencyName] = useState('');
+  const [currencySymbol, setCurrencySymbol] = useState('');
 
   const isFocused = useIsFocused();
 
@@ -22,15 +25,31 @@ const ProfileScreen = ({ navigation }) => {
     try {
       const user = await AsyncStorage.getItem('user');
       if (user) {
-        const { phoneNumber } = JSON.parse(user);
+        const { phoneNumber, callingCode } = JSON.parse(user);
         setPhoneNumber(phoneNumber);
+        setCallingCode(callingCode);
         const response = await axios.get(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`);
         const data = response.data;
         setUserData(data);
         setProfileImage(data.profileImage);
+        fetchCurrencyInfo(callingCode);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
+    }
+  };
+
+  const fetchCurrencyInfo = async (callingCode) => {
+    try {
+      const response = await axios.get(`https://restcountries.com/v3.1/all`);
+      const countries = response.data;
+      const country = countries.find((c) => c.idd.root === `+${callingCode}`);
+      if (country) {
+        setCurrencyName(country.currencies[Object.keys(country.currencies)[0]].name);
+        setCurrencySymbol(country.currencies[Object.keys(country.currencies)[0]].symbol);
+      }
+    } catch (error) {
+      console.error('Error fetching currency info:', error);
     }
   };
 
@@ -51,7 +70,6 @@ const ProfileScreen = ({ navigation }) => {
         setProfileImage(source);
 
         try {
-          // Upload image to Cloudinary
           const formData = new FormData();
           formData.append('file', {
             uri: response.assets[0].uri,
@@ -68,7 +86,6 @@ const ProfileScreen = ({ navigation }) => {
 
           const imageUrl = uploadResponse.data.secure_url;
 
-          // Update profile image URL in your backend
           await axios.put(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`, {
             profileImage: imageUrl,
           });
@@ -77,19 +94,33 @@ const ProfileScreen = ({ navigation }) => {
         } catch (error) {
           console.error('Error saving profile image:', error.response ? error.response.data : error.message);
           alert('Failed to update profile image. Please try again.');
-        
         }
       }
     });
   };
 
   const handleLogout = async () => {
-    try {
-      await AsyncStorage.removeItem('user');
-      navigation.navigate('Login');
-    } catch (error) {
-      console.error('Error logging out:', error);
-    }
+    Alert.alert(
+      "Logout",
+      "Are you sure you want to logout?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Yes",
+          onPress: async () => {
+            try {
+              await AsyncStorage.removeItem('user');
+              navigation.navigate('Login');
+            } catch (error) {
+              console.error('Error logging out:', error);
+            }
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -103,16 +134,29 @@ const ProfileScreen = ({ navigation }) => {
         </TouchableOpacity>
         <View style={styles.profileDetailsContainer}>
           <Text style={styles.profileName}>{userData.firstName} {userData.lastName}</Text>
-          <Text style={styles.profileDetails}>{phoneNumber}</Text>
-          <Text style={styles.profileDetails}>{userData.currencyCode}</Text>
+          <Text style={styles.profileDetails}>{callingCode ? `+${callingCode} ${phoneNumber}` : phoneNumber}</Text>
+          <Text style={styles.profileDetails}>{`${currencySymbol} (${currencyName})`}</Text>
         </View>
       </View>
-      <View style={styles.loggedInContainer}>
-        <Text style={styles.loggedInText}>Logged in as: {phoneNumber}</Text>
+      <View style={styles.optionContainer}>
+        <TouchableOpacity style={styles.option}>
+          <Text style={styles.optionText}>Your QR Code</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.option}>
+          <Text style={styles.optionText}>Invite Friend</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.option}>
+          <Text style={styles.optionText}>Get Help</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.option}>
+          <Text style={styles.optionText}>Change Language</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-        <Text style={styles.logoutText}>Logout</Text>
-      </TouchableOpacity>
+      <View style={styles.logoutContainer}>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
+          <Text style={styles.logoutText}>Logout</Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 };
@@ -121,43 +165,56 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     padding: 20,
+    backgroundColor: '#808080',
   },
   profileContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 20,
+    backgroundColor: 'transparent',
   },
   profileDetailsContainer: {
     flex: 1,
     marginLeft: 10,
+    alignItems: 'flex-end',
   },
   profileName: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: 'white',
   },
   profileDetails: {
     fontSize: 14,
-    color: 'gray',
+    color: 'white',
   },
   profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
-  loggedInContainer: {
+  optionContainer: {
     marginBottom: 20,
-    alignItems: 'center',
   },
-  loggedInText: {
+  option: {
+    backgroundColor: 'transparent',
+    padding: 15,
+    borderRadius: 5,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: 'white',
+  },
+  optionText: {
     fontSize: 16,
-    color: 'gray',
+    color: 'white',
+  },
+  logoutContainer: {
+    marginTop: 20,
+    alignItems: 'center',
   },
   logoutButton: {
-    backgroundColor: '#4682B4',
+    backgroundColor: '#ff6347',
     padding: 10,
     borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 20,
   },
   logoutText: {
     color: 'white',

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, BackHandler } from 'react-native';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import ProfileIcon from '/Users/syed/al-pay/frontend/src/components/icons/profile';
+import TransactionIcon from '/Users/syed/al-pay/frontend/src/components/icons/Transaction'; // Import your custom icon
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
@@ -45,15 +47,13 @@ const PaymentScreen = () => {
   return (
     <View style={styles.outerContainer}>
       <View style={styles.topContainer}>
-      <Text style={styles.titleText}>World Pay</Text>
+        <Text style={styles.titleText}>World Pay</Text>
         <TouchableOpacity style={styles.topIcon}>
           <Icon name="help-circle" size={25} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.topIcon}>
           <Icon name="bell" size={25} color="#000" />
         </TouchableOpacity>
-        
-
       </View>
 
       <ScrollView style={styles.container}>
@@ -66,7 +66,7 @@ const PaymentScreen = () => {
           <Text style={styles.sectionTitle}>Money Transfers</Text>
           <View style={styles.row}>
             <TouchableOpacity style={styles.iconButton}>
-              <Icon name="account-circle" size={25} color="#4682B4" />
+            <Icon name="account-circle" size={25} color="#4682B4" />{/* Use custom icon */}
               <Text style={styles.iconText}>To Mobile Number</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton}>
@@ -136,14 +136,14 @@ const PaymentScreen = () => {
       
       <View style={styles.floatingBottomContainer}>
         <TouchableOpacity style={styles.floatingIconButton} onPress={() => navigation.navigate('Profile')}>
-          <Icon name="account-circle" size={20} color="#000" />
+          <ProfileIcon width={30} height={30}  />
           <Text style={styles.floatingIconText}>Profile</Text>
         </TouchableOpacity>
         <TouchableOpacity style={styles.floatingIconScanner}>
           <Icon name="qrcode-scan" size={35} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.floatingIconButton} onPress={toggleTransactionPopup}>
-          <Icon name="cash" size={30} color="#000" />
+          <TransactionIcon width={30} height={30} />
           <Text style={styles.floatingIconText}>Transactions</Text>
         </TouchableOpacity>
       </View>

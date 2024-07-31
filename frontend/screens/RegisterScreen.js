@@ -46,7 +46,7 @@ const RegisterScreen = ({ navigation, route }) => {
 
       console.log('Saved to database:', response.data);
 
-      navigation.navigate('Payment');
+      navigation.navigate('Payment', { phoneNumber, callingCode });
     } catch (error) {
       if (error.response) {
         console.error('Error response:', error.response.data);

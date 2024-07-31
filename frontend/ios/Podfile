@@ -25,6 +25,7 @@ target 'frontend' do
 
   pod 'RNPermissions', :path => '../node_modules/react-native-permissions'
 
+
   target 'frontendTests' do
     inherit! :complete
     # Pods for testing
@@ -40,3 +41,5 @@ target 'frontend' do
     )
   end
 end
+
+pod 'RNVectorIcons', :path => '../node_modules/react-native-vector-icons'

@@ -51,10 +51,11 @@ const OtpScreen = ({ route, navigation }) => {
       const response = await axios.get(`http://192.168.1.15:5000/api/auth/check-user-exists/${phoneNumber}`);
       const { userExists } = response.data;
 
-      if (userExists) {
-        await AsyncStorage.setItem('user', JSON.stringify({ phoneNumber }));
+      const user = { phoneNumber, callingCode };
 
-        navigation.navigate('Payment');
+      if (userExists) {
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        navigation.navigate('Payment',{ phoneNumber, callingCode });
       } else {
         navigation.navigate('Register', { phoneNumber, callingCode });
       }

@@ -66,5 +66,9 @@
 <key>NSBiometricUsageDescription</key>
 <string>We need access to biometric authentication for security purposes.</string>
 
+<key>UIAppFonts</key>
+  <string>Fonts/MaterialCommunityIcons.ttf</string>
+
+
 </dict>
 </plist>
