@@ -17,6 +17,10 @@ app.use(bodyParser.json());
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
+const countryCodeRoutes = require('./routes/countryCode'); 
+app.use('/api/country', countryCodeRoutes); // New country code routes
+
+
 // Database connection
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,

@@ -59,7 +59,7 @@ router.get('/check-user-exists/:phoneNumber', async (req, res) => {
 
 // POST /api/auth/save-user-details
 router.post('/save-user-details', async (req, res) => {
-  const { phoneNumber, callingCode, firstName, lastName, currencyCode } = req.body;
+  const { phoneNumber, callingCode, firstName, middleName, lastName, currencyName,currencySymbol } = req.body;
 
   try {
     // Create a new user instance
@@ -67,8 +67,10 @@ router.post('/save-user-details', async (req, res) => {
       phoneNumber,
       callingCode,
       firstName,
+      middleName,
       lastName,
-      currencyCode,
+      currencyName,
+      currencySymbol,
     });
 
     // Save the user to MongoDB

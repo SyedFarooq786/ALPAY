@@ -25,6 +25,7 @@
     "axios": "^1.7.2",
     "cloudinary": "^2.4.0",
     "country-calling-code": "^0.0.3",
+    "country-state-city": "^3.2.1",
     "currency-symbol-map": "^5.1.0",
     "expo-image-picker": "^15.0.7",
     "libphonenumber-js": "^1.11.4",
