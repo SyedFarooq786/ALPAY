@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Platform } from 'react-native';
+import React, { useState, useContext, useEffect } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import CountryPicker from 'react-native-country-picker-modal';
 import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
 import { LocationContext } from './LocationContext';
 import PhoneNumber from 'libphonenumber-js';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = () => {
   const navigation = useNavigation();
@@ -14,18 +15,55 @@ const LoginScreen = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [phoneNumberError, setPhoneNumberError] = useState('');
 
-  const handleProceed = () => {
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const user = await AsyncStorage.getItem('user');
+        if (user) {
+          const { phoneNumber, countryCode, callingCode } = JSON.parse(user);
+          setPhoneNumber(phoneNumber);
+          setCountryCode(countryCode);
+          setCallingCode(callingCode);
+        }
+      } catch (error) {
+        console.error('Failed to load user data:', error);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  const handleProceed = async () => {
     if (phoneNumber && !phoneNumberError) {
-      navigation.navigate('Otp', { phoneNumber, countryCode, callingCode });
+      try {
+        // Save user data to AsyncStorage
+        const user = {
+          phoneNumber,
+          countryCode,
+          callingCode,
+          needsPayment: true // Set this flag as per your logic
+        };
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+        await AsyncStorage.setItem('authToken', 'your-auth-token'); // Save the auth token
+
+        console.log('Token saved:', 'your-auth-token');
+        console.log('User data saved:', user);
+  
+        navigation.navigate('Otp', { phoneNumber, countryCode, callingCode });
+      } catch (error) {
+        console.error('Failed to save user data:', error);
+        alert('Failed to proceed. Please try again.');
+      }
     } else {
       alert('Please enter a valid phone number');
     }
   };
+  
 
   const onSelectCountry = (country) => {
-    console.log(country); // Add this line
+    console.log(country);
     if (country && country.callingCode && country.callingCode.length > 0) {
-      setCountryCode(country.cca2 );
+      setCountryCode(country.cca2);
       setCallingCode(country.callingCode[0]);
     } else {
       console.error("Selected country data is not valid", country);

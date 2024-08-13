@@ -1,17 +1,21 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, BackHandler } from 'react-native';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ProfileIcon from '/Users/syed/al-pay/frontend/src/components/icons/profile';
-import TransactionIcon from '/Users/syed/al-pay/frontend/src/components/icons/Transaction'; // Import your custom icon
+import TransactionIcon from '/Users/syed/al-pay/frontend/src/components/icons/Transaction';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import QRCode from 'react-native-qrcode-svg';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 
 const PaymentScreen = () => {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('');
   const [showTransactionPopup, setShowTransactionPopup] = useState(false);
+  const [showQRCodePopup, setShowQRCodePopup] = useState(false); 
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [upiID, setUpiID] = useState(''); // Dynamic UPI ID
 
   const navigation = useNavigation();
 
@@ -27,6 +31,23 @@ const PaymentScreen = () => {
         BackHandler.removeEventListener('hardwareBackPress', onBackPress);
     }, [])
   );
+
+  useEffect(() => {
+    // Fetch user's phone number and generate UPI ID
+    const fetchUserDetails = async () => {
+      try {
+        const response = await axios.get(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`);
+        const user = response.data;
+        const newUpiID = `${user.phoneNumber}_${user.name.substring(0, 3)}123@wpl`;
+        setPhoneNumber(user.phoneNumber);
+        setUpiID(newUpiID);
+      } catch (error) {
+        console.error('Failed to fetch user details:', error);
+      }
+    };
+
+    fetchUserDetails();
+  }, [phoneNumber]);
 
   const handlePayment = () => {
     axios.post('http://10.0.2.2:5000/pay', { amount, currency })
@@ -44,12 +65,21 @@ const PaymentScreen = () => {
     setShowTransactionPopup(!showTransactionPopup);
   };
 
+  const toggleQRCodePopup = () => {
+    setShowQRCodePopup(!showQRCodePopup);
+  };
+
+  const handleQRCodeScan = () => {
+    setQrCodeVisible(false);
+    navigation.navigate('QRScanner'); // Navigate to the QR scan screen
+  };
+
   return (
     <View style={styles.outerContainer}>
       <View style={styles.topContainer}>
         <Text style={styles.titleText}>World Pay</Text>
         <TouchableOpacity style={styles.topIcon}>
-          <Icon name="help-circle" size={25} color="#000" />
+           <Icon name="help-circle" size={24} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.topIcon}>
           <Icon name="bell" size={25} color="#000" />
@@ -58,7 +88,7 @@ const PaymentScreen = () => {
 
       <ScrollView style={styles.container}>
         <Image
-          source={{ uri: 'https://via.placeholder.com/350x150' }} // replace with actual image URL
+          source={{ uri: 'https://via.placeholder.com/350x150' }} 
           style={styles.banner}
         />
 
@@ -66,7 +96,7 @@ const PaymentScreen = () => {
           <Text style={styles.sectionTitle}>Money Transfers</Text>
           <View style={styles.row}>
             <TouchableOpacity style={styles.iconButton}>
-            <Icon name="account-circle" size={25} color="#4682B4" />{/* Use custom icon */}
+              <Icon name="account-circle" size={25} color="#4682B4" />
               <Text style={styles.iconText}>To Mobile Number</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.iconButton}>
@@ -84,9 +114,9 @@ const PaymentScreen = () => {
           </View>
           <View style={styles.divider} />
           <View style={styles.upiContainer}>
-            <Text style={styles.upiText}>UPI ID: bob6994@ybl</Text>
-            <TouchableOpacity style={styles.tryNowButton}>
-              <Text style={styles.tryNowText}>Try Now</Text>
+            <Text style={styles.upiText}>UPI ID: {upiID}</Text>
+            <TouchableOpacity style={styles.tryNowButton} onPress={toggleQRCodePopup}>
+              <Text style={styles.tryNowText}>My QR Code</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -122,7 +152,7 @@ const PaymentScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-        
+
         <View style={styles.newContainer}>
           <Text style={styles.sectionTitle}>New Feature</Text>
           <View style={styles.row}>
@@ -133,13 +163,13 @@ const PaymentScreen = () => {
           </View>
         </View>
       </ScrollView>
-      
+
       <View style={styles.floatingBottomContainer}>
         <TouchableOpacity style={styles.floatingIconButton} onPress={() => navigation.navigate('Profile')}>
-          <ProfileIcon width={30} height={30}  />
+          <ProfileIcon width={30} height={30} />
           <Text style={styles.floatingIconText}>Profile</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.floatingIconScanner}>
+        <TouchableOpacity style={styles.floatingIconScanner} onPress={()=> navigation.navigate('QRScanner')}>
           <Icon name="qrcode-scan" size={35} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity style={styles.floatingIconButton} onPress={toggleTransactionPopup}>
@@ -158,126 +188,85 @@ const PaymentScreen = () => {
           </View>
         </View>
       )}
+
+      {showQRCodePopup && (
+        <View style={styles.popupContainer}>
+          <View style={styles.popup}>
+            <Text style={styles.popupText}>My QR Code</Text>
+            <QRCode value={upiID} size={150} />
+            <TouchableOpacity onPress={toggleQRCodePopup}>
+              <Text style={styles.closePopup}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
     </View>
   );
 };
 
-const ProfileScreen = ({ navigation }) => {
-  const handleLogout = () => {
-    // Add your logout logic here
-    navigation.navigate('LoginScreen');
-  };
-
-  return (
-    <View style={styles.screenContainer}>
-      <Text style={styles.logoutText}>Logout</Text>
-      <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-        <Text>Logout</Text>
-      </TouchableOpacity>
-    </View>
-  );
-};
-
-const TransactionsScreen = () => {
-  return (
-    <View style={styles.screenContainer}>
-      <Text>Transactions</Text>
-    </View>
-  );
-};
-
-const Tab = createBottomTabNavigator();
-
-const App = () => {
-  return (
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ color, size }) => {
-            let iconName;
-
-            if (route.name === 'Home') {
-              iconName = 'home';
-            } else if (route.name === 'Scanner') {
-              iconName = 'qrcode-scan';
-            }
-
-            return <Icon name={iconName} size={size} color={color} />;
-          },
-        })}
-        tabBarOptions={{
-          activeTintColor: '#4682B4',
-          inactiveTintColor: 'gray',
-        }}
-      >
-        <Tab.Screen name="Home" component={PaymentScreen} />
-        <Tab.Screen name="Scanner" component={PaymentScreen} /> {/* Replace with actual Scanner component */}
-      </Tab.Navigator>
-    </NavigationContainer>
-  );
-};
 
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: '#fff',
+  },
+  container: {
+    flex: 1,
+    padding: 10,
+    backgroundColor: '#f0f0f0',
+  },
+  banner: {
+    width: '100%',
+    height: 150,
+    borderRadius: 10,
   },
   topContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    padding: 10,
-    backgroundColor: '#4682B4',
-  },
-  topIcon: {
-    padding: 5,
-  },
-  titleText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'left', // Align text to the left
-  },
-  container: {
-    flex: 1,
+    padding: 15,
     backgroundColor: '#fff',
   },
-  banner: {
-    width: '100%',
-    height: 150,
-    marginBottom: 10,
+  topIcon: {
+    marginLeft: 30,
+
+  },
+  titleText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000',
   },
   roundedContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-    margin: 10,
+    marginTop: 20,
+    padding: 15,
     borderRadius: 10,
-    elevation: 3,
+    backgroundColor: '#fff',
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
+    color: '#000',
   },
   row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
   },
   iconButton: {
+    justifyContent: 'center',
     alignItems: 'center',
     width: '23%',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   iconText: {
-    fontSize: 12,
-    textAlign: 'center',
     marginTop: 5,
+    fontSize: 14,
+    color: '#4682B4',
+    textAlign: 'center',
   },
   divider: {
     height: 1,
     backgroundColor: '#ddd',
-    marginVertical: 10,
+    marginVertical: 15,
   },
   upiContainer: {
     flexDirection: 'row',
@@ -285,23 +274,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   upiText: {
-    fontSize: 14,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000',
   },
   tryNowButton: {
-    backgroundColor: '#4682B4',
     padding: 10,
+    backgroundColor: '#4682B4',
     borderRadius: 5,
   },
   tryNowText: {
     color: '#fff',
     fontWeight: 'bold',
-  },
-  newContainer: {
-    backgroundColor: '#f9f9f9',
-    padding: 20,
-    margin: 10,
-    borderRadius: 10,
-    elevation: 3,
   },
   floatingBottomContainer: {
     flexDirection: 'row',
@@ -323,25 +307,23 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   floatingIconButton: {
+    justifyContent: 'center',
     alignItems: 'center',
-  },
-  floatingIconText: {
-    fontSize: 12,
-    color: '#000',
   },
   floatingIconScanner: {
-    alignItems: 'center',
     justifyContent: 'center',
+    alignItems: 'center',
+    width: 60,
+    height: 60,
     backgroundColor: '#4682B4',
-    width: 70,
-    height: 70,
-    left : 6,
-    borderRadius: 25,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 5,
+    borderRadius: 30,
+    marginBottom: 25,
+  },
+  floatingIconText: {
+    marginTop: 5,
+    fontSize: 12,
+    color: '#4682B4',
+    textAlign: 'center',
   },
   popupContainer: {
     position: 'absolute',
@@ -354,34 +336,42 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   popup: {
-    backgroundColor: '#fff',
+    width: 300,
     padding: 20,
+    backgroundColor: '#fff',
     borderRadius: 10,
-    width: '80%',
+    alignItems: 'center',
   },
   popupText: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 10,
+    marginBottom: 15,
   },
   closePopup: {
+    marginTop: 15,
     color: '#4682B4',
-    marginTop: 10,
+    fontWeight: 'bold',
+  },
+  newContainer: {
+    marginTop: 20,
+    padding: 15,
+    borderRadius: 10,
+    backgroundColor: '#fff',
   },
   screenContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
-  },
-  logoutText: {
-    fontSize: 18,
-    marginBottom: 20,
   },
   logoutButton: {
-    backgroundColor: '#4682B4',
+    marginTop: 20,
     padding: 10,
+    backgroundColor: '#4682B4',
     borderRadius: 5,
+  },
+  logoutText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 });
 

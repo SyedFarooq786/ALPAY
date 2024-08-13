@@ -52,6 +52,7 @@ const ProfileScreen = ({ navigation }) => {
       console.error('Error fetching currency info:', error);
     }
   };
+  
 
   const handleChooseImage = () => {
     const options = {
@@ -112,6 +113,7 @@ const ProfileScreen = ({ navigation }) => {
           text: "Yes",
           onPress: async () => {
             try {
+              await AsyncStorage.removeItem('authToken');
               await AsyncStorage.removeItem('user');
               navigation.navigate('Login');
             } catch (error) {
@@ -122,6 +124,7 @@ const ProfileScreen = ({ navigation }) => {
       ]
     );
   };
+  
 
   return (
     <ScrollView contentContainerStyle={styles.screenContainer}>
