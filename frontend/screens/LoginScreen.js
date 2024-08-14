@@ -41,7 +41,7 @@ const LoginScreen = () => {
           phoneNumber,
           countryCode,
           callingCode,
-          needsPayment: true // Set this flag as per your logic
+          needsPayment: true
         };
         await AsyncStorage.setItem('user', JSON.stringify(user));
         await AsyncStorage.setItem('authToken', 'your-auth-token'); // Save the auth token
