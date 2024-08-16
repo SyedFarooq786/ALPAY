@@ -1,37 +1,45 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Modal } from 'react-native';
-import { Camera, useCameraDevices } from 'react-native-vision-camera';
-import { useScanBarcodes, BarcodeFormat } from 'vision-camera-code-scanner';
+import { Camera, useCameraDevices, useFrameProcessor } from 'react-native-vision-camera';
+import { runOnJS } from 'react-native-reanimated';
 import * as ImagePicker from 'react-native-image-picker';
+import RNFetchBlob from 'rn-fetch-blob';
 import { BrowserMultiFormatReader } from '@zxing/library'; // Import ZXing library
+import jsQR from 'jsqr';
+import { decode as atob } from 'base-64'; 
 
 const QRScanner = ({ navigation }) => {
   const devices = useCameraDevices();
   const device = devices.back;
 
   const [flash, setFlash] = useState(false);
-  const [frameProcessor, barcodes] = useScanBarcodes([BarcodeFormat.QR_CODE]);
   const [scannedData, setScannedData] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  useEffect(() => {
-    if (barcodes.length > 0) {
-      const data = barcodes[0].displayValue;
-      setScannedData(data);
-      setModalVisible(true);
-    }
-  }, [barcodes]);
+  // Define the frame processor using ZXing library
+  const frameProcessor = useFrameProcessor((frame) => {
+    'worklet';
 
-  const handleScannedData = () => {
-    if (scannedData.includes('upi')) {
-      setModalVisible(false);
-      navigation.navigate('Sendmoney', { data: scannedData });
-    } else {
-      Alert.alert('Invalid QR Code', 'This QR code does not contain UPI information.');
+    try {
+      const reader = new BrowserMultiFormatReader();
+      const result = reader.decode(frame);
+      if (result && result.getText()) {
+        console.log('Decoded QR Code Text:', result.getText());
+        runOnJS(handleScannedData)(result.getText());
+      }
+    } catch (error) {
+      console.log('Error decoding QR code:', error);
     }
+  }, []);
+
+  const handleScannedData = (data) => {
+    console.log('Scanned QR Code Data:', data);
+    setScannedData(data);
+    setModalVisible(true);
   };
 
   const toggleFlash = () => {
+    console.log('Toggling Flash:', !flash); 
     setFlash((prev) => !prev);
   };
 
@@ -39,34 +47,39 @@ const QRScanner = ({ navigation }) => {
     ImagePicker.launchImageLibrary({ mediaType: 'photo' }, async (response) => {
       if (response.didCancel) {
         console.log('User cancelled image picker');
-      } else if (response.errorCode) {
+        return;
+      }
+
+      if (response.errorCode) {
         console.log('ImagePicker Error: ', response.errorMessage);
-      } else if (response.assets && response.assets.length > 0) {
+        Alert.alert('Error', `ImagePicker Error: ${response.errorMessage}`);
+        return;
+      }
+
+      if (response.assets && response.assets.length > 0) {
         const selectedImageUri = response.assets[0].uri;
+        console.log('Selected Image URI:', selectedImageUri);
 
-        // Decode QR code from image
         try {
-          const response = await fetch(selectedImageUri);
-          const blob = await response.blob();
-          const reader = new FileReader();
-
-          reader.onload = async () => {
-            const binaryString = reader.result;
-            const codeReader = new BrowserMultiFormatReader();
-            try {
-              const result = await codeReader.decodeFromBinary(binaryString);
-              setScannedData(result.text);
-              setModalVisible(true);
-            } catch (error) {
-              Alert.alert('Error', 'Failed to decode QR code from the selected image.');
-            }
-          };
-          reader.readAsArrayBuffer(blob);
+          const fileData = await RNFetchBlob.fs.readFile(selectedImageUri, 'base64');
+          console.log('Base64 Data from Image:', fileData);
+          // Decode base64 to get QR code result directly
+          const decodedData = await decodeQRCodeFromBase64(fileData);
+          console.log('Decoded QR Code Data from Image:', decodedData);
+          setScannedData(decodedData);
+          setModalVisible(true);
         } catch (error) {
-          Alert.alert('Error', 'Failed to load image.');
+          console.log('Decode Error:', error);
+          Alert.alert('Error', 'Failed to decode QR code from the selected image.');
         }
       }
     });
+  };
+
+  const decodeQRCodeFromBase64 = async (base64Data) => {
+    // Implement QR code decoding logic if needed, for now, return base64 data directly
+    console.log('Base64 Data for Decoding:', base64Data);
+    return base64Data; // Placeholder, replace with actual decoding logic
   };
 
   return (
@@ -82,12 +95,10 @@ const QRScanner = ({ navigation }) => {
         />
       )}
 
-      {/* Back button */}
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
         <Image source={require('/Users/syed/al-pay/frontend/icons8-back-100.png')} style={styles.backIcon} />
       </TouchableOpacity>
 
-      {/* Top icons */}
       <View style={styles.topIconsContainer}>
         <TouchableOpacity onPress={toggleFlash}>
           <Image
@@ -103,7 +114,6 @@ const QRScanner = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* QR code scanning area */}
       <View style={styles.scanAreaContainer}>
         <View style={styles.scanArea}>
           <View style={styles.scanAreaCornerTL} />
@@ -113,13 +123,11 @@ const QRScanner = ({ navigation }) => {
         </View>
       </View>
 
-      {/* Footer with logo and text */}
       <View style={styles.footerContainer}>
         <Image source={require('/Users/syed/al-pay/frontend/world-pay-high-resolution-logo.png')} style={styles.logo} />
         <Text style={styles.footerText}>BHIM  |  UPI</Text>
       </View>
 
-      {/* Modal for scanned data */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -129,7 +137,7 @@ const QRScanner = ({ navigation }) => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>Scanned Data: {scannedData}</Text>
-            <TouchableOpacity onPress={handleScannedData} style={styles.modalButton}>
+            <TouchableOpacity onPress={() => navigation.navigate('Sendmoney', { data: scannedData })} style={styles.modalButton}>
               <Text style={styles.modalButtonText}>Proceed to Send Money</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalButton}>

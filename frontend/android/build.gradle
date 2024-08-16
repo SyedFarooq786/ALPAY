@@ -6,6 +6,8 @@ buildscript {
         targetSdkVersion = 34
         ndkVersion = "26.1.10909125"
         kotlinVersion = "1.9.22"
+        mlKitBarcodeScanningVersion = "17.0.2"
+        googlePlayServicesVisionVersion = "20.1.2"
     }
     repositories {
         google()
