@@ -8,6 +8,8 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import QRCode from 'react-native-qrcode-svg';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 
 const PaymentScreen = () => {
   const [amount, setAmount] = useState('');

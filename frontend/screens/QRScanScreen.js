@@ -1,57 +1,36 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Modal } from 'react-native';
-import { Camera, useCameraDevices, useFrameProcessor } from 'react-native-vision-camera';
-import { runOnJS } from 'react-native-reanimated';
-import * as ImagePicker from 'react-native-image-picker';
-import RNFetchBlob from 'rn-fetch-blob';
-import { BrowserMultiFormatReader } from '@zxing/library'; // Import ZXing library
-import jsQR from 'jsqr';
-import { decode as atob } from 'base-64'; 
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Modal, Dimensions } from 'react-native';
+import { RNCamera } from 'react-native-camera';
+import { MultiFormatReader, BarcodeFormat, DecodeHintType } from '@zxing/library';
+import { launchImageLibrary } from 'react-native-image-picker';
+import QRCodeScanner from 'react-native-qrcode-scanner';
+import RNFS from 'react-native-fs';
+
+const { width, height } = Dimensions.get('window');
 
 const QRScanner = ({ navigation }) => {
-  const devices = useCameraDevices();
-  const device = devices.back;
-
   const [flash, setFlash] = useState(false);
   const [scannedData, setScannedData] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
 
-  // Define the frame processor using ZXing library
-  const frameProcessor = useFrameProcessor((frame) => {
-    'worklet';
-
-    try {
-      const reader = new BrowserMultiFormatReader();
-      const result = reader.decode(frame);
-      if (result && result.getText()) {
-        console.log('Decoded QR Code Text:', result.getText());
-        runOnJS(handleScannedData)(result.getText());
-      }
-    } catch (error) {
-      console.log('Error decoding QR code:', error);
-    }
-  }, []);
-
-  const handleScannedData = (data) => {
+  const handleBarCodeRead = async ({ data }) => {
     console.log('Scanned QR Code Data:', data);
-    setScannedData(data);
-    setModalVisible(true);
+    const paValue = extractPaValue(data);
+    if (paValue) {
+      navigation.navigate('Sendmoney', { paValue });
+    } else {
+      Alert.alert('Error', 'Failed to extract payment address from QR code');
+    }
   };
 
   const toggleFlash = () => {
-    console.log('Toggling Flash:', !flash); 
     setFlash((prev) => !prev);
   };
 
   const openGallery = () => {
-    ImagePicker.launchImageLibrary({ mediaType: 'photo' }, async (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-        return;
-      }
-
+    launchImageLibrary({ mediaType: 'photo' }, async (response) => {
+      if (response.didCancel) return;
       if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorMessage);
         Alert.alert('Error', `ImagePicker Error: ${response.errorMessage}`);
         return;
       }
@@ -59,58 +38,59 @@ const QRScanner = ({ navigation }) => {
       if (response.assets && response.assets.length > 0) {
         const selectedImageUri = response.assets[0].uri;
         console.log('Selected Image URI:', selectedImageUri);
-
-        try {
-          const fileData = await RNFetchBlob.fs.readFile(selectedImageUri, 'base64');
-          console.log('Base64 Data from Image:', fileData);
-          // Decode base64 to get QR code result directly
-          const decodedData = await decodeQRCodeFromBase64(fileData);
-          console.log('Decoded QR Code Data from Image:', decodedData);
-          setScannedData(decodedData);
-          setModalVisible(true);
-        } catch (error) {
-          console.log('Decode Error:', error);
-          Alert.alert('Error', 'Failed to decode QR code from the selected image.');
-        }
+        decodeQRCodeFromImage(selectedImageUri);
       }
     });
   };
 
-  const decodeQRCodeFromBase64 = async (base64Data) => {
-    // Implement QR code decoding logic if needed, for now, return base64 data directly
-    console.log('Base64 Data for Decoding:', base64Data);
-    return base64Data; // Placeholder, replace with actual decoding logic
+  const decodeQRCodeFromImage = async (imageUri) => {
+    try {
+      const imagePath = imageUri.replace('file://', '');
+      const imageData = await RNFS.readFile(imagePath, 'base64');
+      const codeReader = new MultiFormatReader();
+      const result = await codeReader.decodeFromImage(imageData);
+      const paValue = extractPaValue(result.text);
+      if (paValue) {
+        navigation.navigate('Sendmoney', { paValue });
+      } else {
+        Alert.alert('Error', 'Failed to extract payment address from QR code');
+      }
+    } catch (error) {
+      console.error('Error decoding QR code:', error.message);
+      Alert.alert('Error', `Failed to decode QR code: ${error.message}`);
+    }
   };
 
+  const extractPaValue = (data) => {
+    const paMatch = data.match(/pa=([^&]*)/);
+    return paMatch ? decodeURIComponent(paMatch[1]) : null;
+  };
+  
   return (
     <View style={{ flex: 1 }}>
-      {device != null && (
-        <Camera
-          style={{ flex: 1 }}
-          device={device}
-          isActive={true}
-          flash={flash ? 'on' : 'off'}
-          frameProcessor={frameProcessor}
-          frameProcessorFps={5}
-        />
-      )}
+      <RNCamera
+        style={{ flex: 1 }}
+        type={RNCamera.Constants.Type.back}
+        flashMode={flash ? RNCamera.Constants.FlashMode.torch : RNCamera.Constants.FlashMode.off}
+        onBarCodeRead={handleBarCodeRead}
+      />
 
       <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-        <Image source={require('/Users/syed/al-pay/frontend/icons8-back-100.png')} style={styles.backIcon} />
+        <Image source={require('../assets/icons8-back-100.png')} style={styles.backIcon} />
       </TouchableOpacity>
 
       <View style={styles.topIconsContainer}>
         <TouchableOpacity onPress={toggleFlash}>
           <Image
-            source={flash ? require('/Users/syed/al-pay/frontend/icons8-flash-26.png') : require('/Users/syed/al-pay/frontend/icons8-flash-off-50.png')}
+            source={flash ? require('../assets/icons8-flash-26.png') : require('../assets/icons8-flash-off-50.png')}
             style={styles.icon}
           />
         </TouchableOpacity>
         <TouchableOpacity onPress={openGallery}>
-          <Image source={require('/Users/syed/al-pay/frontend/icons8-gallery-64.png')} style={styles.icon} />
+          <Image source={require('../assets/icons8-gallery-64.png')} style={styles.icon} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => navigation.navigate('Help')}>
-          <Image source={require('/Users/syed/al-pay/frontend/icons8-help-32.png')} style={styles.icon} />
+          <Image source={require('../assets/icons8-help-32.png')} style={styles.icon} />
         </TouchableOpacity>
       </View>
 
@@ -124,7 +104,7 @@ const QRScanner = ({ navigation }) => {
       </View>
 
       <View style={styles.footerContainer}>
-        <Image source={require('/Users/syed/al-pay/frontend/world-pay-high-resolution-logo.png')} style={styles.logo} />
+        <Image source={require('/Users/syed/al-pay/frontend/logo.png')} style={styles.logo} />
         <Text style={styles.footerText}>BHIM  |  UPI</Text>
       </View>
 
@@ -175,13 +155,20 @@ const styles = StyleSheet.create({
     marginHorizontal: 15,
   },
   scanAreaContainer: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: '100%',
+    height: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
   scanArea: {
-    width: 250,
-    height: 250,
+    width: width * 0.8,
+    height: width * 0.8,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    position: 'absolute',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -263,10 +250,11 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   modalButton: {
-    backgroundColor: 'blue',
+    backgroundColor: 'purple',
     padding: 10,
     borderRadius: 5,
     marginVertical: 5,
+    width: '100%',
     alignItems: 'center',
   },
   modalButtonText: {
