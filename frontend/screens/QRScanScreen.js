@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, Alert, Modal, Dimensions } from 'react-native';
 import { RNCamera } from 'react-native-camera';
-import { MultiFormatReader, BarcodeFormat, DecodeHintType } from '@zxing/library';
+import { MultiFormatReader } from '@zxing/library';
 import { launchImageLibrary } from 'react-native-image-picker';
-import QRCodeScanner from 'react-native-qrcode-scanner';
 import RNFS from 'react-native-fs';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width, height } = Dimensions.get('window');
 
@@ -12,12 +12,18 @@ const QRScanner = ({ navigation }) => {
   const [flash, setFlash] = useState(false);
   const [scannedData, setScannedData] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState('');
+
+
+  
 
   const handleBarCodeRead = async ({ data }) => {
     console.log('Scanned QR Code Data:', data);
-    const paValue = extractPaValue(data);
+    
+
+    const { paValue, ctValue, pnValue } = extractPaValue(data);
     if (paValue) {
-      navigation.navigate('Sendmoney', { paValue });
+      navigation.navigate('Sendmoney', { paValue, ctValue, pnValue, phoneNumber });
     } else {
       Alert.alert('Error', 'Failed to extract payment address from QR code');
     }
@@ -49,9 +55,9 @@ const QRScanner = ({ navigation }) => {
       const imageData = await RNFS.readFile(imagePath, 'base64');
       const codeReader = new MultiFormatReader();
       const result = await codeReader.decodeFromImage(imageData);
-      const paValue = extractPaValue(result.text);
+      const { paValue, ctValue, pnValue } = extractPaValue(result.text);
       if (paValue) {
-        navigation.navigate('Sendmoney', { paValue });
+        navigation.navigate('Sendmoney', { paValue, ctValue, pnValue, phoneNumber });
       } else {
         Alert.alert('Error', 'Failed to extract payment address from QR code');
       }
@@ -63,9 +69,14 @@ const QRScanner = ({ navigation }) => {
 
   const extractPaValue = (data) => {
     const paMatch = data.match(/pa=([^&]*)/);
-    return paMatch ? decodeURIComponent(paMatch[1]) : null;
+    const ctMatch = data.match(/CT=([^&]*)/);
+    const pnMatch = data.match(/pn=([^&]*)/);
+    const paValue = paMatch ? decodeURIComponent(paMatch[1]) : null;
+    const ctValue = ctMatch ? decodeURIComponent(ctMatch[1]) : null;
+    const pnValue = pnMatch ? decodeURIComponent(pnMatch[1]) : null;
+    return { paValue, ctValue, pnValue };
   };
-  
+
   return (
     <View style={{ flex: 1 }}>
       <RNCamera
@@ -117,7 +128,7 @@ const QRScanner = ({ navigation }) => {
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalText}>Scanned Data: {scannedData}</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Sendmoney', { data: scannedData })} style={styles.modalButton}>
+            <TouchableOpacity onPress={() => navigation.navigate('Sendmoney', { data: scannedData, phoneNumber })} style={styles.modalButton}>
               <Text style={styles.modalButtonText}>Proceed to Send Money</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.modalButton}>
@@ -129,6 +140,7 @@ const QRScanner = ({ navigation }) => {
     </View>
   );
 };
+
 
 const styles = StyleSheet.create({
   backButton: {

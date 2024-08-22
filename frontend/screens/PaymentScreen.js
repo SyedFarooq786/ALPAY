@@ -1,25 +1,50 @@
-import React, { useState,useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, BackHandler } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, BackHandler, Alert } from 'react-native';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import ProfileIcon from '/Users/syed/al-pay/frontend/src/components/icons/profile';
 import TransactionIcon from '/Users/syed/al-pay/frontend/src/components/icons/Transaction';
-import { NavigationContainer } from '@react-navigation/native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import QRCode from 'react-native-qrcode-svg';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 
 
-const PaymentScreen = () => {
+const extractPaValue = (upiID) => {
+  // Check if the UPI ID contains query parameters
+  const queryString = upiID.split('?')[1];
+  if (!queryString) return null;
+
+  
+  // Split the query string into key-value pairs
+  const queryParams = queryString.split('&');
+  for (const param of queryParams) {
+    const [key, value] = param.split('='); 
+    if (key === 'pa') {
+      return value;
+    }
+  }
+  return null; // Return null if 'pa' is not found
+};
+
+const PaymentScreen = ({ route }) => {
   const [amount, setAmount] = useState('');
   const [currency, setCurrency] = useState('');
   const [showTransactionPopup, setShowTransactionPopup] = useState(false);
   const [showQRCodePopup, setShowQRCodePopup] = useState(false); 
   const [phoneNumber, setPhoneNumber] = useState('');
   const [upiID, setUpiID] = useState(''); // Dynamic UPI ID
+  const [paValue, setPaValue] = useState('');
+  const [transactions, setTransactions] = useState([]);
+  const [userDetails, setUserDetails] = useState(null); // New state for user details
 
   const navigation = useNavigation();
+
+  useEffect(() => {
+    if (route.params?.phoneNumber) {
+      setPhoneNumber(route.params.phoneNumber);
+    }
+  }, [route.params?.phoneNumber]);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -34,32 +59,71 @@ const PaymentScreen = () => {
     }, [])
   );
 
+
   useEffect(() => {
     // Fetch user's phone number and generate UPI ID
     const fetchUserDetails = async () => {
       try {
+        console.log('Fetching user details for phone number:', phoneNumber);
         const response = await axios.get(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`);
+        console.log('API response:', response.data); // Log the API response
+        
         const user = response.data;
-        const newUpiID = `${user.phoneNumber}_${user.name.substring(0, 3)}123@wpl`;
-        setPhoneNumber(user.phoneNumber);
-        setUpiID(newUpiID);
+        
+        if (!user || !user.upiID) {
+          throw new Error('UPI ID is missing or incomplete');
+      }
+
+      console.log('Retrieved UPI ID:', user.upiID);
+      
+      // Store the full UPI ID
+      setUpiID(user.upiID);
+      await AsyncStorage.setItem('upiID', user.upiID);
+      setPhoneNumber(user.phoneNumber);      
+      await AsyncStorage.setItem('phoneNumber', user.phoneNumber);
+      // Extract and set the 'pa' value
+      const paValue = extractPaValue(user.upiID);
+      if (!paValue) {
+        throw new Error('PA value is missing in UPI ID');
+      }
+      setPaValue(paValue);
+  
+      
+      // Call logStoredItems to log all stored items
+      useEffect(() => {
+        logStoredItems();
+      }, []);
+
+       // Fetch transactions
+       //const transactionsResponse = await axios.get(`http://192.168.1.15:5000/api/transactions/${phoneNumber}`);
+       setTransactions(transactionsResponse.data);
+
+       setShowTransactionPopup(true);
+
+      // setUpiID(user.upiID);
+      // await AsyncStorage.setItem('upiID', user.upiID);
+      // setPhoneNumber(user.phoneNumber);
+  
       } catch (error) {
-        console.error('Failed to fetch user details:', error);
+        //console.error('Failed to fetch user details:', error);
+        //Alert.alert('Error', 'Failed to fetch user details');
       }
     };
-
-    fetchUserDetails();
+  
+    if (phoneNumber) {
+      fetchUserDetails();
+    }
   }, [phoneNumber]);
 
   const handlePayment = () => {
     axios.post('http://10.0.2.2:5000/pay', { amount, currency })
       .then(response => {
         console.log('Payment successful', response.data);
-        alert('Payment successful!');
+        Alert.alert('Payment Successful', 'Payment successful!');
       })
       .catch(error => {
         console.error('Payment failed', error);
-        alert('Payment failed. Please try again.');
+        Alert.alert('Payment Failed', 'Payment failed. Please try again.');
       });
   };
 
@@ -71,10 +135,38 @@ const PaymentScreen = () => {
     setShowQRCodePopup(!showQRCodePopup);
   };
 
-  const handleQRCodeScan = () => {
-    setQrCodeVisible(false);
-    navigation.navigate('QRScanner'); // Navigate to the QR scan screen
-  };
+  useEffect(() => {
+    const retrieveUpiID = async () => {
+      try {
+        const savedUpiID = await AsyncStorage.getItem('upiID');
+        if (savedUpiID) {
+          setUpiID(savedUpiID);
+          setPaValue(extractPaValue(savedUpiID));
+        } else {
+          // Optionally fetch the UPI ID if not found in AsyncStorage
+          fetchUserDetails();
+        }
+      } catch (error) {
+        console.error('Failed to retrieve UPI ID:', error);
+      }
+    };
+  
+    retrieveUpiID();
+  }, []);
+  
+  useEffect(() => {
+    const handleAppStateChange = (nextAppState) => {
+      if (nextAppState === 'active') {
+        // Optionally refresh the UPI ID or other state when the app comes to the foreground
+        retrieveUpiID();
+      }
+    };
+    AppState.addEventListener('change', handleAppStateChange);
+  
+    return () => {
+      AppState.removeEventListener('change', handleAppStateChange);
+    };
+  }, []);
 
   return (
     <View style={styles.outerContainer}>
@@ -116,7 +208,7 @@ const PaymentScreen = () => {
           </View>
           <View style={styles.divider} />
           <View style={styles.upiContainer}>
-            <Text style={styles.upiText}>UPI ID: {upiID}</Text>
+            <Text style={styles.upiText}>UPI ID: {paValue}</Text>
             <TouchableOpacity style={styles.tryNowButton} onPress={toggleQRCodePopup}>
               <Text style={styles.tryNowText}>My QR Code</Text>
             </TouchableOpacity>
@@ -183,7 +275,16 @@ const PaymentScreen = () => {
       {showTransactionPopup && (
         <View style={styles.popupContainer}>
           <View style={styles.popup}>
-            <Text style={styles.popupText}>Transactions List</Text>
+            <Text style={styles.popupText}>User Details:</Text>
+            {userDetails ? (
+              <View>
+                <Text style={styles.popupText}>Phone: {userDetails.phoneNumber}</Text>
+                <Text style={styles.popupText}>Name: {userDetails.name}</Text>
+                <Text style={styles.popupText}>Email: {userDetails.email}</Text>
+              </View>
+            ) : (
+              <Text style={styles.popupText}>Loading...</Text>
+            )}
             <TouchableOpacity onPress={toggleTransactionPopup}>
               <Text style={styles.closePopup}>Close</Text>
             </TouchableOpacity>
@@ -205,7 +306,6 @@ const PaymentScreen = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   outerContainer: {

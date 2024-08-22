@@ -14,16 +14,6 @@ const HomeScreen = () => {
   }, []);
 
   const requestPermissions = async () => {
-    // try {
-    //   // Requesting permissions
-    //   const granted = await requestMultiple([
-    //     PERMISSIONS.ANDROID.CAMERA,
-    //     PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE,
-    //     PERMISSIONS.ANDROID.WRITE_EXTERNAL_STORAGE,
-    //     PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION,
-    //     PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION,
-    //     PERMISSIONS.ANDROID.READ_CONTACTS,
-    //   ]);
     try {
       let permissionsToRequest;
 
@@ -47,9 +37,6 @@ const HomeScreen = () => {
 
       // Requesting permissions
       const granted = await requestMultiple(permissionsToRequest);
-
-
-
       console.log('Permissions granted:', granted);
 
       // If location permission is granted, get location

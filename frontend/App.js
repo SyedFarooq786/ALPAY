@@ -39,7 +39,7 @@ const App = () => {
             const needsPayment = userData?.needsPayment || false;
             setInitialRoute(needsPayment ? 'Payment' : 'Home');
           } else {
-            setInitialRoute('Login');
+            setInitialRoute('Home');
           }
         }
       } catch (error) {
@@ -56,6 +56,7 @@ const App = () => {
   if (loading) {
     return null; // Or a loading spinner
   }
+//<Image source={require('./assets/logo.png')} style={styles.logo} />
 
   return (
     <NavigationContainer ref={navigationRef}>

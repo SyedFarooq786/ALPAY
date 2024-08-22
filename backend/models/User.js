@@ -10,7 +10,9 @@ const userSchema = new mongoose.Schema({
   lastName: { type: String },
   currencyName: { type: String, required: true },
   currencySymbol: { type: String, required: true },
-  profileImage: { type: String }
+  profileImage: { type: String },
+  upiID : { type: String},
+  currencyCode : {type : String},
 
 });
 

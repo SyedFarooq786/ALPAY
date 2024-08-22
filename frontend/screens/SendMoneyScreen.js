@@ -1,12 +1,54 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, KeyboardAvoidingView, Keyboard } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, KeyboardAvoidingView, Keyboard, Platform, Alert } from 'react-native';
+import axios from 'axios';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const SendMoneyScreen = ({ route, navigation }) => {
-  const { paValue } = route.params;
+const SendMoneyScreen = ({ route }) => {
+  const { paValue, ctValue, pnValue } = route.params;
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [amount, setAmount] = useState('');
   const [keyboardVisible, setKeyboardVisible] = useState(false);
+  const [currencyCode, setCurrencyCode] = useState('');
+  const [currencySymbol, setCurrencySymbol] = useState('');
+  const [conversionMessage, setConversionMessage] = useState('');
+  const navigation = useNavigation();
 
   useEffect(() => {
+    const fetchPhoneNumber = async () => {
+      try {
+        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        if (storedPhoneNumber) {
+          setPhoneNumber(storedPhoneNumber);
+        }
+      } catch (error) {
+        console.error('Error retrieving phone number from AsyncStorage:', error);
+      }
+    };
+
+    const fetchUserDetails = async () => {
+      try {
+        if (phoneNumber) {
+          const response = await axios.get(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`);
+          const { currencyCode, currencySymbol } = response.data;
+          setCurrencyCode(currencyCode);
+          setCurrencySymbol(currencySymbol);
+
+          if (currencyCode !== ctValue) {
+            const convertedAmount = await getConvertedAmount(amount, ctValue, currencyCode);
+            setConversionMessage(`You will be debited ${convertedAmount} ${currencySymbol} from your account.`);
+          } else {
+            setConversionMessage('');
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user details:', error);
+      }
+    };
+
+    fetchPhoneNumber();
+    fetchUserDetails();
+
     const keyboardDidShowListener = Keyboard.addListener('keyboardDidShow', () => {
       setKeyboardVisible(true);
     });
@@ -18,7 +60,58 @@ const SendMoneyScreen = ({ route, navigation }) => {
       keyboardDidHideListener.remove();
       keyboardDidShowListener.remove();
     };
-  }, []);
+  }, [amount, phoneNumber]);
+
+  const getConvertedAmount = async (amount, fromCurrency, toCurrency) => {
+    try {
+      const response = await axios.get('https://api.currencyapi.com/v3/latest', {
+        params: {
+          base_currency: fromCurrency,
+          currencies: toCurrency
+        },
+        headers: {
+          apikey: 'cur_live_JIuSg5nbHL7rmGxyfTbW5qPEdRKm4VZeThQDV8Zp' // Replace with your API key
+        }
+      });
+      
+      const rate = response.data.data[toCurrency]?.value;
+      if (!rate) {
+        throw new Error('Conversion rate not found');
+      }
+      return (amount * rate).toFixed(2);
+    } catch (error) {
+      console.error('Error fetching conversion rate:', error);
+      return amount;
+    }
+  };
+
+  const handleAmountChange = (text) => {
+    const numericText = text.replace(/[^0-9.]/g, '');
+    setAmount(numericText);
+  };
+
+  const handleSendMoney = () => {
+    Alert.alert(
+      "Confirm Transaction",
+      "Are you sure you want to send this amount?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel"
+        },
+        {
+          text: "Confirm",
+          onPress: () => {
+            alert('Money Sent!');
+            navigation.navigate('Payment');
+          }
+        }
+      ]
+    );
+  };
+
+  const firstLetter = pnValue.charAt(0).toUpperCase();
+  const defaultProfileImage = `https://via.placeholder.com/100?text=${firstLetter}`;
 
   return (
     <KeyboardAvoidingView
@@ -30,45 +123,51 @@ const SendMoneyScreen = ({ route, navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Image source={require('../assets/icons8-back-100.png')} style={styles.backIcon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Send Money</Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Help')} style={styles.helpButton}>
+          <Image source={require('/Users/syed/al-pay/frontend/assets/icons8-help-32.png')} style={styles.helpIcon} />
+        </TouchableOpacity>
       </View>
 
-      {/* UPI ID Section */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>UPI ID:</Text>
-        <TextInput
-          style={styles.input}
-          value={paValue}
-          editable={false} // UPI ID is non-editable
-        />
+      {/* Profile Section */}
+      <View style={styles.profileSection}>
+        <Image source={{ uri: defaultProfileImage }} style={styles.profileImage} />
+        <View style={styles.profileDetails}>
+          <Text style={styles.profileName}>{pnValue}</Text>
+          <Text style={styles.profileUPI}>{paValue}</Text>
+        </View>
       </View>
 
       {/* Amount Section */}
-      <View style={styles.inputContainer}>
-        <Text style={styles.label}>Enter Amount:</Text>
+      <View style={styles.amountContainer}>
+        <Text style={styles.currencySymbol}>{ctValue}</Text>
         <TextInput
-          style={styles.input}
+          style={styles.amountInput}
           keyboardType="numeric"
           placeholder="Enter amount"
           value={amount}
-          onChangeText={setAmount}
+          onChangeText={handleAmountChange}
           autoFocus={true}
         />
       </View>
 
+      {/* Conversion Message */}
+      {conversionMessage ? (
+        <Text style={styles.conversionText}>{conversionMessage}</Text>
+      ) : null}
+
       {/* Note Section */}
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Note:</Text>
         <TextInput
-          style={styles.input}
+          style={styles.messageInput}
           placeholder="Add a note (optional)"
+          maxLength={100}
         />
       </View>
 
       {/* Send Button */}
       <TouchableOpacity
         style={[styles.sendButton, { marginBottom: keyboardVisible ? 20 : 50 }]}
-        onPress={() => alert('Money Sent!')}
+        onPress={handleSendMoney}
         disabled={!amount}
       >
         <Text style={styles.sendButtonText}>Send Money</Text>
@@ -93,7 +192,7 @@ const styles = StyleSheet.create({
   },
   headerContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 20,
   },
   backButton: {
@@ -103,25 +202,66 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
   },
-  headerTitle: {
-    fontSize: 24,
+  helpButton: {
+    marginRight: 10,
+  },
+  helpIcon: {
+    width: 30,
+    height: 30,
+  },
+  profileSection: {
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  profileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  profileName: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#333',
+  },
+  profileUPI: {
+    fontSize: 16,
+    color: '#555',
+  },
+  amountContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
+  },
+  currencySymbol: {
+    fontSize: 24,
+    marginRight: 10,
+    color: '#333',
+  },
+  conversionText: {
+    fontSize: 14,
+    color: '#555',
+    marginBottom: 10,
+  },
+  amountInput: {
+    flex: 1,
+    fontSize: 24,
+    paddingVertical: 10,
   },
   inputContainer: {
     marginBottom: 20,
   },
-  label: {
-    fontSize: 18,
-    marginBottom: 5,
-    color: '#333',
-  },
-  input: {
+  messageInput: {
     backgroundColor: '#fff',
     padding: 10,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ddd',
     fontSize: 16,
   },
   sendButton: {
@@ -143,14 +283,14 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: 50,
-    height: 50,
+    height: 50, 
     marginBottom: 10,
   },
   footerText: {
     color: '#555',
     fontSize: 18,
     fontWeight: 'bold',
-    letterSpacing: 1.5,
+    letterSpacing: 1,
   },
 });
 

@@ -10,13 +10,15 @@ const RegisterScreen = ({ navigation, route }) => {
   const [currencyName, setCurrencyName] = useState('');
   const [currencySymbol, setCurrencySymbol] = useState('');
   const [firstNameError, setFirstNameError] = useState(false);
+  const [currencyCode, setCurrencyCode] = useState('');
 
+  
   useEffect(() => {
     const fetchCurrencyDetails = async () => {
       try {
         const response = await axios.get(`http://10.0.2.2:5000/api/country/country-code/${callingCode}`);
         const { currency } = response.data;
-
+        setCurrencyCode(currency.currencyCode || 'N/A');
         setCurrencyName(currency.currencyName || 'N/A');
         setCurrencySymbol(currency.currencySymbol || 'N/A');
       } catch (error) {
@@ -33,8 +35,12 @@ const RegisterScreen = ({ navigation, route }) => {
       Alert.alert('Error', 'Please enter your first name.');
       return;
     }
-
+  
     try {
+      // Fetch a new custid
+      const custIdResponse = await axios.get('http://10.0.2.2:5000/api/auth/next-custid');
+      const newCustId = custIdResponse.data.custId;
+  
       const apiEndpoint = 'http://10.0.2.2:5000/api/auth/save-user-details';
       const response = await axios.post(apiEndpoint, {
         phoneNumber,
@@ -44,10 +50,12 @@ const RegisterScreen = ({ navigation, route }) => {
         lastName,
         currencyName,
         currencySymbol,
+        upiID: `upi://pay?pa=${phoneNumber}@wpay&pn=${encodeURIComponent(firstName + ' ' + lastName)}&CT=${currencyCode}&custid=${newCustId}`,
+        currencyCode,
       });
-
+  
       console.log('Saved to database:', response.data);
-
+  
       navigation.navigate('Payment', { phoneNumber, callingCode });
     } catch (error) {
       if (error.response) {
@@ -58,6 +66,7 @@ const RegisterScreen = ({ navigation, route }) => {
       }
     }
   };
+  
 
   return (
     <View style={styles.container}>

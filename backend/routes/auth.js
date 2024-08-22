@@ -4,6 +4,7 @@ const User = require('../models/User');
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
+const CustId = require('../models/CustId');
 
 cloudinary.config({
   cloud_name: 'world-pay', 
@@ -59,7 +60,7 @@ router.get('/check-user-exists/:phoneNumber', async (req, res) => {
 
 // POST /api/auth/save-user-details
 router.post('/save-user-details', async (req, res) => {
-  const { phoneNumber, callingCode, firstName, middleName, lastName, currencyName,currencySymbol } = req.body;
+  const { phoneNumber, callingCode, firstName, middleName, lastName, currencyName,currencySymbol,upiID,currencyCode} = req.body;
 
   try {
     // Create a new user instance
@@ -71,6 +72,8 @@ router.post('/save-user-details', async (req, res) => {
       lastName,
       currencyName,
       currencySymbol,
+      upiID,
+      currencyCode
     });
 
     // Save the user to MongoDB
@@ -105,5 +108,31 @@ router.put('/user/:phoneNumber', upload.single('profileImage'), async (req, res)
   }
 });
 
+
+router.get('/next-custid', async (req, res) => {
+  try {
+    let custIdDoc = await CustId.findOne();
+
+    if (!custIdDoc) {
+      // Create the initial custid if it doesn't exist
+      custIdDoc = new CustId({ currentId: 'WPAY0000' });
+      await custIdDoc.save();
+    }
+
+    // Increment the current ID
+    const currentId = custIdDoc.currentId;
+    const numericPart = parseInt(currentId.substring(4)) + 1;
+    const newCustId = `WPAY${numericPart.toString().padStart(4, '0')}`;
+
+    // Update the document with the new custid
+    custIdDoc.currentId = newCustId;
+    await custIdDoc.save();
+
+    res.json({ custId: newCustId });
+  } catch (error) {
+    console.error('Error generating custid:', error);
+    res.status(500).send('Server error');
+  }
+});
 
 module.exports = router;
