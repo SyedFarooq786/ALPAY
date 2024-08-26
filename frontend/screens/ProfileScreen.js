@@ -1,103 +1,59 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Alert } from 'react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
-import axios from 'axios';
+import React, { useEffect, useState } from 'react';
+import {
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  Alert,
+  Modal,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useIsFocused } from '@react-navigation/native';
+import axios from 'axios';
+import QRCode from 'react-native-qrcode-svg';
 
 const ProfileScreen = ({ navigation }) => {
-  const [profileImage, setProfileImage] = useState(null);
   const [userData, setUserData] = useState({});
-  const [phoneNumber, setPhoneNumber] = useState('');
-  const [callingCode, setCallingCode] = useState('');
-  const [currencyName, setCurrencyName] = useState('');
-  const [currencySymbol, setCurrencySymbol] = useState('');
-
-  const isFocused = useIsFocused();
+  const [qrModalVisible, setQrModalVisible] = useState(false);
 
   useEffect(() => {
-    if (isFocused) {
-      fetchUserData();
-    }
-  }, [isFocused]);
-
-  const fetchUserData = async () => {
-    try {
-      const user = await AsyncStorage.getItem('user');
-      if (user) {
-        const { phoneNumber, callingCode } = JSON.parse(user);
-        setPhoneNumber(phoneNumber);
-        setCallingCode(callingCode);
+    const fetchUserData = async () => {
+      try {
+        const phoneNumber = await AsyncStorage.getItem('phoneNumber');
         const response = await axios.get(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`);
-        const data = response.data;
-        setUserData(data);
-        setProfileImage(data.profileImage);
-        fetchCurrencyInfo(callingCode);
+        setUserData(response.data);
+      } catch (error) {
+        console.error('Error fetching user data:', error);
       }
-    } catch (error) {
-      console.error('Error fetching user data:', error);
-    }
-  };
-
-  const fetchCurrencyInfo = async (callingCode) => {
-    try {
-      const response = await axios.get(`https://restcountries.com/v3.1/all`);
-      const countries = response.data;
-      const country = countries.find((c) => c.idd.root === `+${callingCode}`);
-      if (country) {
-        setCurrencyName(country.currencies[Object.keys(country.currencies)[0]].name);
-        setCurrencySymbol(country.currencies[Object.keys(country.currencies)[0]].symbol);
-      }
-    } catch (error) {
-      console.error('Error fetching currency info:', error);
-    }
-  };
-  
-
-  const handleChooseImage = () => {
-    const options = {
-      mediaType: 'photo',
-      includeBase64: false,
-      quality: 1.0,
     };
 
-    launchImageLibrary(options, async (response) => {
-      if (response.didCancel) {
-        console.log('User cancelled image picker');
-      } else if (response.errorCode) {
-        console.log('ImagePicker Error: ', response.errorMessage);
-      } else {
-        const source = { uri: response.assets[0].uri };
-        setProfileImage(source);
+    fetchUserData();
+  }, []);
 
-        try {
-          const formData = new FormData();
-          formData.append('file', {
-            uri: response.assets[0].uri,
-            type: response.assets[0].type,
-            name: response.assets[0].fileName,
-          });
-          formData.append('upload_preset', 'ml_default'); // Replace with your Cloudinary upload preset
-
-          const uploadResponse = await axios.post('https://api.cloudinary.com/v1_1/your_cloud_name/image/upload', formData, {
-            headers: {
-              'Content-Type': 'multipart/form-data',
-            },
-          });
-
-          const imageUrl = uploadResponse.data.secure_url;
-
-          await axios.put(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`, {
-            profileImage: imageUrl,
-          });
-
-          console.log('Profile image updated successfully');
-        } catch (error) {
-          console.error('Error saving profile image:', error.response ? error.response.data : error.message);
-          alert('Failed to update profile image. Please try again.');
-        }
+  const extractPaValue = (upiID) => {
+    if (!upiID) {
+      return 'default@upi'; // Return a default value if upiID is undefined or null
+    }
+  
+    const queryParams = upiID.split('?')[1];
+    const paramsArray = queryParams.split('&');
+    for (let param of paramsArray) {
+      const [key, value] = param.split('=');
+      if (key === 'pa') {
+        return value || 'default@upi';
       }
-    });
+    }
+    return 'default@upi'; // Return a default value if 'pa' is not found
+  };
+
+  const handleCompleteProfile = () => {
+    // Navigate to the Complete Profile screen
+  };
+
+  const handleProfileClick = () => {
+    // Navigate to the Details screen
+    navigation.navigate('DetailsScreen');
   };
 
   const handleLogout = async () => {
@@ -124,40 +80,128 @@ const ProfileScreen = ({ navigation }) => {
       ]
     );
   };
-  
+
+  const renderProfileImage = () => {
+    if (userData.profileImage) {
+      return <Image style={styles.profileImage} source={{ uri: userData.profileImage }} />;
+    } else {
+      const initial = userData.firstName ? userData.firstName.charAt(0).toUpperCase() : 'J';
+      return (
+        <View style={styles.profileInitialContainer}>
+          <Text style={styles.profileInitial}>{initial}</Text>
+        </View>
+      );
+    }
+  };
 
   return (
-    <ScrollView contentContainerStyle={styles.screenContainer}>
-      <View style={styles.profileContainer}>
-        <TouchableOpacity onPress={handleChooseImage}>
-          <Image
-            source={profileImage ? { uri: profileImage.uri } : require('/Users/syed/al-pay/frontend/1.png')}
-            style={styles.profileImage}
-          />
+    <ScrollView contentContainerStyle={styles.container}>
+      {/* Profile Header */}
+      <View style={styles.profileHeader}>
+        <TouchableOpacity style={styles.profileDetails} onPress={handleProfileClick}>
+          {renderProfileImage()}
+          <View style={styles.userDetailsContainer}>
+            <Text style={styles.userName}>{userData.firstName || 'John Doe'}</Text>
+            <Text style={styles.userPhone}>{userData.phoneNumber || '+91 7975747104'}</Text>
+          </View>
         </TouchableOpacity>
-        <View style={styles.profileDetailsContainer}>
-          <Text style={styles.profileName}>{userData.firstName} {userData.lastName}</Text>
-          <Text style={styles.profileDetails}>{callingCode ? `+${callingCode} ${phoneNumber}` : phoneNumber}</Text>
-          <Text style={styles.profileDetails}>{`${currencySymbol} (${currencyName})`}</Text>
+        <TouchableOpacity style={styles.rightArrowContainer}>
+          <Text style={styles.rightArrow}>{'>'}</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Receive Money Section */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Receive Money</Text>
+        <View style={styles.receiveMoneyContainer}>
+          <Text style={styles.receiveMoneyText}>
+            UPI ID: {extractPaValue(userData.upiID) || 'default@upi'}
+          </Text>
+          <TouchableOpacity onPress={() => setQrModalVisible(true)}>
+            <View style={styles.qrCodeContainer}>
+              <QRCode value={userData.upiID || 'upi://pay?pa=default@upi'} size={60} />
+            </View>
+          </TouchableOpacity>
         </View>
       </View>
-      <View style={styles.optionContainer}>
-        <TouchableOpacity style={styles.option}>
-          <Text style={styles.optionText}>Your QR Code</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.option}>
-          <Text style={styles.optionText}>Invite Friend</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.option}>
-          <Text style={styles.optionText}>Get Help</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.option}>
-          <Text style={styles.optionText}>Change Language</Text>
+
+      {/* QR Code Modal */}
+      <Modal
+        transparent={true}
+        visible={qrModalVisible}
+        onRequestClose={() => setQrModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <QRCode value={userData.upiID || 'upi://pay?pa=default@upi'} size={200} />
+            <TouchableOpacity onPress={() => setQrModalVisible(false)}>
+              <Text style={styles.closeModalText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Complete Profile Section */}
+      <View style={styles.completeProfileContainer}>
+        <View style={styles.completeProfileDetails}>
+          <Text style={styles.completeProfileTitle}>Complete Your Profile</Text>
+          <Text style={styles.completeProfileDescription}>
+            Tell us more about yourself and get a personalized experience on World Pay
+          </Text>
+        </View>
+        <TouchableOpacity style={styles.completeProfileButton} onPress={handleCompleteProfile}>
+          <Text style={styles.completeProfileButtonText}>COMPLETE PROFILE</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Payment Methods */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Payment Methods</Text>
+        <View style={styles.paymentMethodsContainer}>
+          {[
+            { name: 'Bank Accounts', icon: '🏦' },
+            { name: 'Debit & Credit Cards', icon: '💳' },
+            { name: 'World Pay Wallet', icon: '👜' },
+            { name: 'World Pay Gift Card', icon: '🎁' },
+            { name: 'UPI Lite', icon: '💸' },
+            { name: 'RuPay Credit on UPI', icon: '⭐' },
+            { name: 'Credit Line on UPI', icon: '📉' }
+          ].map((method, index) => (
+            <View key={index} style={styles.paymentMethod}>
+              <Text style={styles.paymentMethodIcon}>{method.icon}</Text>
+              <Text style={styles.paymentMethodText}>{method.name}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* Payment Management */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>Payment Management</Text>
+        <View style={styles.paymentManagementContainer}>
+          {[
+            { name: 'AutoPay', icon: '🔁' },
+            { name: 'International', icon: '🌐' },
+            { name: 'UPI Settings', icon: '⚙️' }
+          ].map((management, index) => (
+            <View key={index} style={styles.paymentManagement}>
+              <Text style={styles.paymentManagementIcon}>{management.icon}</Text>
+              <Text style={styles.paymentManagementText}>{management.name}</Text>
+            </View>
+          ))}
+        </View>
+      </View>
+
+      {/* World Pay Account Aggregator */}
+      <View style={styles.sectionContainer}>
+        <Text style={styles.sectionTitle}>World Pay Account Aggregator</Text>
+        {/* Add content for this section as needed */}
+      </View>
+
+      {/* Logout Button */}
       <View style={styles.logoutContainer}>
-        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
-          <Text style={styles.logoutText}>Logout</Text>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Text style={styles.logoutButtonText}>LOGOUT</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
@@ -165,63 +209,189 @@ const ProfileScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  screenContainer: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#808080',
+  container: {
+    flexGrow: 1,
+    backgroundColor: '#F3F4F6',
+    paddingBottom: 20,
   },
-  profileContainer: {
+  profileHeader: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
-    backgroundColor: 'transparent',
-  },
-  profileDetailsContainer: {
-    flex: 1,
-    marginLeft: 10,
-    alignItems: 'flex-end',
-  },
-  profileName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: 'white',
+    backgroundColor: '#fff',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
   },
   profileDetails: {
-    fontSize: 14,
-    color: 'white',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   profileImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
   },
-  optionContainer: {
-    marginBottom: 20,
+  profileInitialContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#007bff',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  option: {
-    backgroundColor: 'transparent',
-    padding: 15,
-    borderRadius: 5,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'white',
+  profileInitial: {
+    fontSize: 24,
+    color: '#fff',
+    fontWeight: 'bold',
   },
-  optionText: {
+  userDetailsContainer: {
+    marginLeft: 15,
+  },
+  userName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  userPhone: {
     fontSize: 16,
-    color: 'white',
+    color: '#666',
+    marginTop: 2,
+  },
+  rightArrowContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rightArrow: {
+    fontSize: 24,
+    color: '#666',
+  },
+  sectionContainer: {
+    backgroundColor: '#fff',
+    marginTop: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10,
+  },
+  receiveMoneyContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    justifyContent: 'space-between',
+  
+  },
+  receiveMoneyText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  qrCodeContainer: {
+    //marginRight: 10,
+  },
+  completeProfileContainer: {
+    backgroundColor: '#007bff',
+    marginTop: 15,
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  completeProfileDetails: {
+    flex: 1,
+  },
+  completeProfileTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  completeProfileDescription: {
+    fontSize: 14,
+    color: '#f1f1f1',
+    marginTop: 5,
+  },
+  completeProfileButton: {
+    backgroundColor: '#0056b3',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 5,
+  },
+  completeProfileButtonText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  paymentMethodsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 15,
+  },
+  paymentMethod: {
+    width: '50%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  paymentMethodIcon: {
+    fontSize: 24,
+    marginRight: 10,
+  },
+  paymentMethodText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  paymentManagementContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 15,
+  },
+  paymentManagement: {
+    width: '50%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  paymentManagementIcon: {
+    fontSize: 24,
+    marginRight: 10,
+  },
+  paymentManagementText: {
+    fontSize: 16,
+    color: '#333',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  closeModalText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#007bff',
   },
   logoutContainer: {
     marginTop: 20,
-    alignItems: 'center',
+    paddingHorizontal: 20,
   },
   logoutButton: {
-    backgroundColor: '#ff6347',
-    padding: 10,
+    backgroundColor: '#d9534f',
+    paddingVertical: 12,
     borderRadius: 5,
+    alignItems: 'center',
   },
-  logoutText: {
-    color: 'white',
+  logoutButtonText: {
+    fontSize: 16,
     fontWeight: 'bold',
+    color: '#fff',
   },
 });
 
