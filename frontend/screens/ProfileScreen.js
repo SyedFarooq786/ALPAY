@@ -21,7 +21,7 @@ const ProfileScreen = ({ navigation }) => {
     const fetchUserData = async () => {
       try {
         const phoneNumber = await AsyncStorage.getItem('phoneNumber');
-        const response = await axios.get(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`);
+        const response = await axios.get(`http://192.168.3.51:5000/api/auth/user/${phoneNumber}`);
         setUserData(response.data);
       } catch (error) {
         console.error('Error fetching user data:', error);
@@ -53,7 +53,7 @@ const ProfileScreen = ({ navigation }) => {
 
   const handleProfileClick = () => {
     // Navigate to the Details screen
-    navigation.navigate('DetailsScreen');
+    navigation.navigate('UserProfileScreen');
   };
 
   const handleLogout = async () => {
@@ -194,7 +194,7 @@ const ProfileScreen = ({ navigation }) => {
 
       {/* World Pay Account Aggregator */}
       <View style={styles.sectionContainer}>
-        <Text style={styles.sectionTitle}>World Pay Account Aggregator</Text>
+        <Text style={styles.sectionTitle}>World Pay Account </Text>
         {/* Add content for this section as needed */}
       </View>
 

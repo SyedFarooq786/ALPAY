@@ -65,7 +65,7 @@ const PaymentScreen = ({ route }) => {
     const fetchUserDetails = async () => {
       try {
         console.log('Fetching user details for phone number:', phoneNumber);
-        const response = await axios.get(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`);
+        const response = await axios.get(`http://192.168.3.51:5000/api/auth/user/${phoneNumber}`);
         console.log('API response:', response.data); // Log the API response
         
         const user = response.data;
@@ -95,7 +95,7 @@ const PaymentScreen = ({ route }) => {
       }, []);
 
        // Fetch transactions
-       //const transactionsResponse = await axios.get(`http://192.168.1.15:5000/api/transactions/${phoneNumber}`);
+       //const transactionsResponse = await axios.get(`http://192.168.3.51:5000/api/transactions/${phoneNumber}`);
        setTransactions(transactionsResponse.data);
 
        setShowTransactionPopup(true);

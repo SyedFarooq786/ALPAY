@@ -11,6 +11,11 @@ const RegisterScreen = ({ navigation, route }) => {
   const [currencySymbol, setCurrencySymbol] = useState('');
   const [firstNameError, setFirstNameError] = useState(false);
   const [currencyCode, setCurrencyCode] = useState('');
+  const [email,setemail] = useState('');
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Regular expression for email validation
+
+  const [emailError, setEmailError] = useState(false);   
 
   
   useEffect(() => {
@@ -52,6 +57,7 @@ const RegisterScreen = ({ navigation, route }) => {
         currencySymbol,
         upiID: `upi://pay?pa=${phoneNumber}@wpay&pn=${encodeURIComponent(firstName + ' ' + lastName)}&CT=${currencyCode}&custid=${newCustId}`,
         currencyCode,
+        email,
       });
   
       console.log('Saved to database:', response.data);
@@ -108,12 +114,19 @@ const RegisterScreen = ({ navigation, route }) => {
         onChangeText={setMiddleName}
         placeholder="Middle Name (optional)"
       />
-
+       
       <TextInput
         style={styles.input}
         value={lastName}
         onChangeText={setLastName}
         placeholder="Last Name"
+      />
+
+      <TextInput
+        style={styles.input}
+        value={email}
+        onChangeText={setemail}
+        placeholder="Email ID"
       />
 
       <TouchableOpacity style={styles.button} onPress={handleContinue}>

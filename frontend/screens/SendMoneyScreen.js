@@ -29,7 +29,7 @@ const SendMoneyScreen = ({ route }) => {
     const fetchUserDetails = async () => {
       try {
         if (phoneNumber) {
-          const response = await axios.get(`http://192.168.1.15:5000/api/auth/user/${phoneNumber}`);
+          const response = await axios.get(`http://192.168.3.51:5000/api/auth/user/${phoneNumber}`);
           const { currencyCode, currencySymbol } = response.data;
           setCurrencyCode(currencyCode);
           setCurrencySymbol(currencySymbol);

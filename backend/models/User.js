@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   profileImage: { type: String },
   upiID : { type: String},
   currencyCode : {type : String},
+  email : {type : String,required: true},
 
 });
 
