@@ -14,9 +14,6 @@ const extractPaValue = (upiID) => {
   // Check if the UPI ID contains query parameters
   const queryString = upiID.split('?')[1];
   if (!queryString) return null;
-
-  
-  // Split the query string into key-value pairs
   const queryParams = queryString.split('&');
   for (const param of queryParams) {
     const [key, value] = param.split('='); 
@@ -87,45 +84,33 @@ const PaymentScreen = ({ route }) => {
         throw new Error('PA value is missing in UPI ID');
       }
       setPaValue(paValue);
-  
-      
-      // Call logStoredItems to log all stored items
-      useEffect(() => {
-        logStoredItems();
-      }, []);
-
-       // Fetch transactions
-       //const transactionsResponse = await axios.get(`http://192.168.3.51:5000/api/transactions/${phoneNumber}`);
-       setTransactions(transactionsResponse.data);
-
-       setShowTransactionPopup(true);
-
-      // setUpiID(user.upiID);
-      // await AsyncStorage.setItem('upiID', user.upiID);
-      // setPhoneNumber(user.phoneNumber);
-  
-      } catch (error) {
-        //console.error('Failed to fetch user details:', error);
-        //Alert.alert('Error', 'Failed to fetch user details');
-      }
-    };
+      fetchTransactions(); // Fetch transactions after setting user details
+    } catch (error) {
+      console.error('Failed to fetch user details:', error);
+    }
+  };
   
     if (phoneNumber) {
       fetchUserDetails();
     }
   }, [phoneNumber]);
 
-  const handlePayment = () => {
-    axios.post('http://10.0.2.2:5000/pay', { amount, currency })
-      .then(response => {
-        console.log('Payment successful', response.data);
-        Alert.alert('Payment Successful', 'Payment successful!');
-      })
-      .catch(error => {
-        console.error('Payment failed', error);
-        Alert.alert('Payment Failed', 'Payment failed. Please try again.');
-      });
+  const fetchTransactions = async () => {
+    try {
+      console.log('Fetching transactions for phone number:', phoneNumber);
+      const response = await axios.get(`http://192.168.3.51:5000/api/auth/transactions/${phoneNumber}`);
+      console.log('Fetched transactions:', response.data);
+      setTransactions(response.data);
+    } catch (error) {
+      console.error('Failed to fetch transactions:', error);
+    }
   };
+
+  useEffect(() => {
+    if (phoneNumber) {
+      fetchTransactions();
+    }
+  }, [phoneNumber]);
 
   const toggleTransactionPopup = () => {
     setShowTransactionPopup(!showTransactionPopup);
@@ -134,6 +119,8 @@ const PaymentScreen = ({ route }) => {
   const toggleQRCodePopup = () => {
     setShowQRCodePopup(!showQRCodePopup);
   };
+
+  
 
   useEffect(() => {
     const retrieveUpiID = async () => {
@@ -158,15 +145,16 @@ const PaymentScreen = ({ route }) => {
     const handleAppStateChange = (nextAppState) => {
       if (nextAppState === 'active') {
         // Optionally refresh the UPI ID or other state when the app comes to the foreground
-        retrieveUpiID();
+        //retrieveUpiID();
       }
     };
-    AppState.addEventListener('change', handleAppStateChange);
-  
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+
     return () => {
-      AppState.removeEventListener('change', handleAppStateChange);
-    };
+    subscription.remove();
+};
   }, []);
+
 
   return (
     <View style={styles.outerContainer}>
@@ -237,6 +225,7 @@ const PaymentScreen = ({ route }) => {
           </View>
         </View>
 
+
         <View style={styles.roundedContainer}>
           <Text style={styles.sectionTitle}>Rewards</Text>
           <View style={styles.row}>
@@ -266,31 +255,11 @@ const PaymentScreen = ({ route }) => {
         <TouchableOpacity style={styles.floatingIconScanner} onPress={()=> navigation.navigate('QRScanner')}>
           <Icon name="qrcode-scan" size={35} color="#fff" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.floatingIconButton} onPress={toggleTransactionPopup}>
+        <TouchableOpacity style={styles.floatingIconButton} onPress={() => navigation.navigate('Transactions')}>
           <TransactionIcon width={30} height={30} />
           <Text style={styles.floatingIconText}>Transactions</Text>
         </TouchableOpacity>
       </View>
-
-      {showTransactionPopup && (
-        <View style={styles.popupContainer}>
-          <View style={styles.popup}>
-            <Text style={styles.popupText}>User Details:</Text>
-            {userDetails ? (
-              <View>
-                <Text style={styles.popupText}>Phone: {userDetails.phoneNumber}</Text>
-                <Text style={styles.popupText}>Name: {userDetails.name}</Text>
-                <Text style={styles.popupText}>Email: {userDetails.email}</Text>
-              </View>
-            ) : (
-              <Text style={styles.popupText}>Loading...</Text>
-            )}
-            <TouchableOpacity onPress={toggleTransactionPopup}>
-              <Text style={styles.closePopup}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
 
       {showQRCodePopup && (
         <View style={styles.popupContainer}>
@@ -472,6 +441,30 @@ const styles = StyleSheet.create({
     borderRadius: 5,
   },
   logoutText: {
+    color: '#fff',
+    fontWeight: 'bold',
+  },
+  
+  transactionList: {
+    maxHeight: 200,
+    width: '100%',
+  },
+  transactionItem: {
+    marginBottom: 10,
+    padding: 10,
+    borderRadius: 5,
+    backgroundColor: '#fff',
+  },
+  transactionText: {
+    fontSize: 16,
+  },
+  viewMoreButton: {
+    marginTop: 10,
+    padding: 10,
+    backgroundColor: '#4682B4',
+    borderRadius: 5,
+  },
+  viewMoreText: {
     color: '#fff',
     fontWeight: 'bold',
   },

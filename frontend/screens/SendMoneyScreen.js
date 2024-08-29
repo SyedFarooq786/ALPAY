@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, KeyboardAvo
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import moment from 'moment';
 
 const SendMoneyScreen = ({ route }) => {
   const { paValue, ctValue, pnValue } = route.params;
@@ -11,6 +12,7 @@ const SendMoneyScreen = ({ route }) => {
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   const [currencyCode, setCurrencyCode] = useState('');
   const [currencySymbol, setCurrencySymbol] = useState('');
+  const [recipientCurrencySymbol, setRecipientCurrencySymbol] = useState('');
   const [conversionMessage, setConversionMessage] = useState('');
   const navigation = useNavigation();
 
@@ -33,6 +35,9 @@ const SendMoneyScreen = ({ route }) => {
           const { currencyCode, currencySymbol } = response.data;
           setCurrencyCode(currencyCode);
           setCurrencySymbol(currencySymbol);
+
+          const recipientSymbol = await getRecipientCurrencySymbol(ctValue);
+          setRecipientCurrencySymbol(recipientSymbol);
 
           if (currencyCode !== ctValue) {
             const convertedAmount = await getConvertedAmount(amount, ctValue, currencyCode);
@@ -62,6 +67,17 @@ const SendMoneyScreen = ({ route }) => {
     };
   }, [amount, phoneNumber]);
 
+  const getRecipientCurrencySymbol = async (currencyCode) => {
+    try {
+      const response = await axios.get(`https://restcountries.com/v3.1/currency/${currencyCode}`);
+      const currency = response.data[0].currencies[currencyCode];
+      return currency?.symbol || '';
+    } catch (error) {
+      console.error('Error fetching recipient currency symbol:', error);
+      return '';
+    }
+  };
+
   const getConvertedAmount = async (amount, fromCurrency, toCurrency) => {
     try {
       const response = await axios.get('https://api.currencyapi.com/v3/latest', {
@@ -90,7 +106,7 @@ const SendMoneyScreen = ({ route }) => {
     setAmount(numericText);
   };
 
-  const handleSendMoney = () => {
+  const handleSendMoney = async () => {
     Alert.alert(
       "Confirm Transaction",
       "Are you sure you want to send this amount?",
@@ -101,14 +117,43 @@ const SendMoneyScreen = ({ route }) => {
         },
         {
           text: "Confirm",
-          onPress: () => {
-            alert('Money Sent!');
-            navigation.navigate('Payment');
+          onPress: async () => {
+            // Generate a unique transaction number
+            const transactionNumber = `TXNWP${Date.now()}`;
+
+            // Get current time
+            const transactionTime = moment().format('YYYY-MM-DD HH:mm:ss');
+
+            // Save transaction details
+            const transactionDetails = {
+              phoneNumber,
+              transactionNumber,
+              amount,
+              recipientCurrencySymbol,
+              recipientCurrencyCode: ctValue,
+              senderCurrencySymbol: currencySymbol, // Sender's currency symbol
+              senderCurrencyCode: currencyCode, 
+              recipientName: pnValue,
+              recipientUPI: paValue,
+              transactionTime,
+              phoneNumber,
+              transactionType: 'debit'
+,
+            };
+
+            await axios.post('http://192.168.3.51:5000/api/auth/transaction', transactionDetails);
+
+            // Navigate to the PaymentSuccessScreen
+            navigation.navigate('PaymentSuccess', { transactionDetails });
+            //console.error('Error during transaction:', error);
+            //Alert.alert("Transaction Failed", "There was an error processing your transaction. Please try again.");
           }
         }
       ]
     );
   };
+
+  
 
   const firstLetter = pnValue.charAt(0).toUpperCase();
   const defaultProfileImage = `https://via.placeholder.com/100?text=${firstLetter}`;
@@ -183,6 +228,7 @@ const SendMoneyScreen = ({ route }) => {
     </KeyboardAvoidingView>
   );
 };
+
 
 const styles = StyleSheet.create({
   container: {

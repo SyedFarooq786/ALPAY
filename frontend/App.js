@@ -13,6 +13,11 @@ import ProfileScreen from './screens/ProfileScreen';
 import QRScannerScreen from './screens/QRScanScreen';
 import SendMoneyScreen from './screens/SendMoneyScreen';
 import UserProfileScreen from './screens/UserProfileScreen';
+import PaymentSuccessScreen from './screens/PaymentSuccessScreen';
+import TransactionsScreen from './screens/TransactionsScreen';
+import TransactionDetailsScreen from './screens/TransactionDetailsScreen';
+
+
 const Stack = createStackNavigator();
 
 const App = () => {
@@ -72,6 +77,11 @@ const App = () => {
           <Stack.Screen name="QRScanner" component={QRScannerScreen} />
           <Stack.Screen name="Sendmoney" component={SendMoneyScreen} />
           <Stack.Screen name="UserProfileScreen" component={UserProfileScreen} />
+          <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
+          <Stack.Screen name="Transactions" component={TransactionsScreen} />
+          <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} />
+
+
         </Stack.Navigator>
       </LocationProvider>
     </NavigationContainer>
