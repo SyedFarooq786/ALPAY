@@ -5,6 +5,8 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
 const CustId = require('../models/CustId');
+const Transaction = require('../models/Transaction');  // Add this line
+
 
 cloudinary.config({
   cloud_name: 'world-pay', 
@@ -25,17 +27,24 @@ const upload = multer({ storage: storage });
 
 // Endpoint to check user details
 
-router.get('/user/:phoneNumber', async (req, res) => {
-  const { phoneNumber } = req.params;
-  console.log(`Fetching user with phone number: ${phoneNumber}`);  // Log phone number
+router.get('/user/:phoneNumbers', async (req, res) => {
+  const phoneNumbers = req.params.phoneNumbers.split(',');
+  console.log(`Fetching users with phone numbers: ${phoneNumbers}`);
+
   try {
-    const user = await User.findOne({ phoneNumber });
-    if (!user) {
-      console.log(`User with phone number ${phoneNumber} not found`);
-      return res.status(404).json({ message: 'User not found' });
+    if (phoneNumbers.length === 1) {
+      const user = await User.findOne({ phoneNumber: phoneNumbers[0] });
+      if (!user) {
+        console.log(`User with phone number ${phoneNumbers[0]} not found`);
+        return res.status(404).json({ message: 'User not found' });
+      }
+      console.log(`User found: ${JSON.stringify(user)}`);
+      return res.json(user);
+    } else {
+      const users = await User.find({ phoneNumber: { $in: phoneNumbers } });
+      console.log(`Users found: ${JSON.stringify(users)}`);
+      return res.json(users);
     }
-    console.log(`User found: ${JSON.stringify(user)}`);
-    res.json(user);
   } catch (error) {
     console.error('Error fetching user details:', error);
     return res.status(500).json({ error: 'Internal server error' });
@@ -43,14 +52,22 @@ router.get('/user/:phoneNumber', async (req, res) => {
 });
 
 // Endpoint to check if user exists
-router.get('/check-user-exists/:phoneNumber', async (req, res) => {
-  const { phoneNumber } = req.params;
+router.get('/check-user-exists/:phoneNumbers', async (req, res) => {
+  const phoneNumbers = req.params.phoneNumbers.split(',');
+  console.log(`Checking existence for phone numbers: ${phoneNumbers}`);
+
   try {
-    const user = await User.findOne({ phoneNumber });
-    if (user) {
-      return res.json({ userExists: true });
+    const users = await User.find({ phoneNumber: { $in: phoneNumbers } }, 'phoneNumber');
+    const existingPhoneNumbers = users.map(user => user.phoneNumber);
+
+    if (phoneNumbers.length === 1) {
+      return res.json({ userExists: existingPhoneNumbers.includes(phoneNumbers[0]) });
     } else {
-      return res.json({ userExists: false });
+      const results = phoneNumbers.map(phoneNumber => ({
+        phoneNumber,
+        exists: existingPhoneNumbers.includes(phoneNumber)
+      }));
+      return res.json({ results });
     }
   } catch (error) {
     console.error('Error checking user existence:', error);
@@ -106,6 +123,59 @@ router.put('/user/:phoneNumber', upload.single('profileImage'), async (req, res)
   } catch (error) {
     console.error('Error updating profile image:', error);
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.post('/transaction', async (req, res) => {
+  const {
+    phoneNumber,
+    transactionNumber,
+    amount,
+    senderCurrencySymbol,
+    senderCurrencyCode,
+    recipientName,
+    recipientUPI,
+    recipientCurrencySymbol,
+    recipientCurrencyCode,
+    transactionType,
+    transactionTime,
+    debitAmount,
+  } = req.body;
+
+  try {
+    const newTransaction = new Transaction({
+      phoneNumber,
+      transactionNumber,
+      amount,
+      senderCurrencySymbol,
+      senderCurrencyCode,
+      recipientName,
+      recipientName,
+      recipientUPI,
+      recipientCurrencySymbol,
+      recipientCurrencyCode,
+      transactionType,
+      transactionTime,
+      debitAmount
+    });
+
+    await newTransaction.save();
+    res.status(201).json(newTransaction);
+  } catch (error) {
+    console.error('Error saving transaction:', error);
+    res.status(500).json({ error: 'Server error. Failed to save transaction.' });
+  }
+});
+
+// GET /api/auth/transactions/:phoneNumber - Retrieve transactions by phone number
+router.get('/transactions/:phoneNumber', async (req, res) => {
+  const { phoneNumber } = req.params;
+  try {
+    const transactions = await Transaction.find({ phoneNumber }).sort({ transactionTime: -1 }).limit(10);
+    res.json(transactions);
+  } catch (error) {
+    console.error('Error retrieving transactions:', error);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 

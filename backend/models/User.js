@@ -15,6 +15,7 @@ const userSchema = new mongoose.Schema({
   currencyCode : {type : String},
   email : {type : String,required: true},
 
+
 });
 
 const User = mongoose.model('User', userSchema);

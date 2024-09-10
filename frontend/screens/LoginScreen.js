@@ -1,5 +1,16 @@
 import React, { useState, useContext, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet, 
+  SafeAreaView, 
+  KeyboardAvoidingView, 
+  Platform, 
+  ScrollView,
+  StatusBar
+} from 'react-native';
 import CountryPicker from 'react-native-country-picker-modal';
 import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
@@ -36,7 +47,6 @@ const LoginScreen = () => {
   const handleProceed = async () => {
     if (phoneNumber && !phoneNumberError) {
       try {
-        // Save user data to AsyncStorage
         const user = {
           phoneNumber,
           countryCode,
@@ -44,7 +54,7 @@ const LoginScreen = () => {
           needsPayment: true
         };
         await AsyncStorage.setItem('user', JSON.stringify(user));
-        await AsyncStorage.setItem('authToken', 'your-auth-token'); // Save the auth token
+        await AsyncStorage.setItem('authToken', 'your-auth-token');
 
         console.log('Token saved:', 'your-auth-token');
         console.log('User data saved:', user);
@@ -58,10 +68,8 @@ const LoginScreen = () => {
       alert('Please enter a valid phone number');
     }
   };
-  
 
   const onSelectCountry = (country) => {
-    console.log(country);
     if (country && country.callingCode && country.callingCode.length > 0) {
       setCountryCode(country.cca2);
       setCallingCode(country.callingCode[0]);
@@ -85,167 +93,195 @@ const LoginScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Animatable.Image
-        animation="fadeInLeft"
-        source={require('/Users/syed/al-pay/frontend/1.png')}
-        style={styles.logo}
-      />
-      <View style={styles.textContainer}>
-        <Animatable.Text animation="fadeIn" style={styles.title}>
-          Enter your mobile number
-        </Animatable.Text>
-        <Animatable.Text animation="fadeIn" style={styles.subtitle}>
-          Enter mobile number linked to bank account for UPI and international payments.
-        </Animatable.Text>
-      </View>
-      <Animatable.View animation="fadeIn" delay={500} style={styles.inputContainer}>
-        <View style={styles.inputBorder}>
-          <CountryPicker
-            countryCode={countryCode}
-            withFilter
-            withFlag
-            withCallingCode
-            withEmoji
-            onSelect={onSelectCountry}
-            containerButtonStyle={styles.countryPicker}
-            translation="eng"
-          />
-          <Text style={styles.callingCode}>+{callingCode}</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Mobile Number"
-            keyboardType="phone-pad"
-            value={phoneNumber}
-            onChangeText={validatePhoneNumber}
-            maxLength={15}
-          />
-        </View>
-        {phoneNumberError ? (
-          <Text style={styles.errorText}>{phoneNumberError}</Text>
-        ) : null}
-      </Animatable.View>
-      <View style={styles.footerContainer}>
-        <Text style={styles.footerText}>
-          By proceeding, you are agreeing to Al-Pay <Text style={styles.link}>Terms and Conditions</Text> &{' '}
-          <Text style={styles.link}>Privacy policy</Text>
-        </Text>
-      </View>
-      <Animatable.View animation="bounceIn" delay={1000} style={styles.buttonContainer}>
-        <TouchableOpacity style={styles.button} onPress={handleProceed}>
-          <Text style={styles.buttonText}>PROCEED</Text>
-        </TouchableOpacity>
-      </Animatable.View>
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <StatusBar barStyle="light-content" backgroundColor="#4c669f" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        <ScrollView contentContainerStyle={styles.scrollViewContent}>
+          <View style={styles.background}>
+            <Animatable.Image
+              animation="bounceIn"
+              duration={1500}
+              source={require('/Users/syed/al-pay/frontend/assets/logo.png')}
+              style={styles.logo}
+            />
+            <View style={styles.textContainer}>
+              <Text style={styles.title}>
+                Enter your mobile number
+              </Text>
+              <Text style={styles.subtitle}>
+                Enter mobile number linked to bank account for UPI and international payments.
+              </Text>
+            </View>
+            <View style={styles.inputContainer}>
+              <View style={styles.inputBorder}>
+                <CountryPicker
+                  countryCode={countryCode}
+                  withFilter
+                  withFlag
+                  withCallingCode
+                  withEmoji
+                  onSelect={onSelectCountry}
+                  containerButtonStyle={styles.countryPicker}
+                  translation="eng"
+                />
+                <Text style={styles.callingCode}>+{callingCode}</Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Mobile Number"
+                  placeholderTextColor="#a0a0a0"
+                  keyboardType="phone-pad"
+                  value={phoneNumber}
+                  onChangeText={validatePhoneNumber}
+                  maxLength={15}
+                />
+              </View>
+              {phoneNumberError ? (
+                <Text style={styles.errorText}>
+                  {phoneNumberError}
+                </Text>
+              ) : null}
+            </View>
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.button} onPress={handleProceed}>
+                <Text style={styles.buttonText}>PROCEED</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={styles.footerContainer}>
+              <Text style={styles.footerText}>
+                By proceeding, you are agreeing to Al-Pay <Text style={styles.link}>Terms and Conditions</Text> &{' '}
+                <Text style={styles.link}>Privacy policy</Text>
+              </Text>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: '#4c669f',
+  },
   container: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+  },
+  background: {
     flex: 1,
     justifyContent: 'flex-start',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#FFFFFF',
+    padding: 20,
+    backgroundColor: '#4c669f',
   },
   logo: {
-    width: 50,
-    height: 50,
-    marginTop: 10,
-    marginBottom: 20,
-    alignSelf: 'flex-start',
+    width: 100,
+    height: 100,
+    marginTop: 40,
+    marginBottom: 30,
+    alignSelf: 'center',
   },
   textContainer: {
-    alignSelf: 'flex-start',
-    marginBottom: 16,
-    marginLeft: 16,
+    alignSelf: 'stretch',
+    marginBottom: 30,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#000',
-    marginBottom: 8,
-    textAlign: 'left',
+    color: '#fff',
+    marginBottom: 10,
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'ClashGrotesk-Medium' : 'ClashGrotesk-Medium',
   },
   subtitle: {
-    fontSize: 14,
-    color: '#6c757d',
-    textAlign: 'left',
+    fontSize: 12,
+    color: '#e0e0e0',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'ClashGrotesk-Medium' : 'ClashGrotesk-Medium',
+    lineHeight: 24,
   },
   inputContainer: {
     width: '100%',
-    height: 48,
-    marginBottom: 10,
+    marginBottom: 30,
   },
   inputBorder: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#666',
-    borderRadius: 5,
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    padding: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 10,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
   },
   countryPicker: {
     marginRight: 10,
-    borderWidth: 0,
-    borderRadius: 5,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    padding: 10,
   },
   callingCode: {
     marginRight: 10,
-    fontSize: 16,
-    color: '#000',
+    fontSize: 18,
+    color: '#fff',
+    fontFamily: Platform.OS === 'ios' ? 'Helvetica' : 'ClashGrotesk-Medium',
   },
   input: {
     flex: 1,
-    padding: 0,
-    fontSize: 16,
+    padding: 10,
+    fontSize: 18,
+    color: '#fff',
+    fontFamily: Platform.OS === 'ios' ? 'Helvetica' : 'ClashGrotesk-Medium',
   },
   buttonContainer: {
-    position: 'absolute',
-    bottom: 20,
     width: '100%',
-    paddingHorizontal: 16,
+    marginBottom: 20,
   },
   button: {
-    backgroundColor: '#007BFF',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 5,
+    backgroundColor: '#00a86b',
+    paddingVertical: 15,
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     width: '100%',
+    shadowColor: "#000",
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   buttonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
+    fontFamily: Platform.OS === 'ios' ? 'Helvetica Neue' : 'sans-serif-medium',
   },
   footerContainer: {
-    position: 'absolute',
-    bottom: 68,
     width: '100%',
-    paddingHorizontal: 16,
-  },
-  footerText: {
-    fontSize: 12,
-    color: '#6c757d',
-    textAlign: 'center',
     marginTop: 20,
   },
+  footerText: {
+    fontSize: 14,
+    color: '#e0e0e0',
+    textAlign: 'center',
+    fontFamily: Platform.OS === 'ios' ? 'Helvetica' : 'ClashGrotesk-Medium',
+    lineHeight: 20,
+  },
   link: {
-    color: '#007BFF',
+    color: '#00a86b',
+    textDecorationLine: 'underline',
   },
   errorText: {
-    color: 'red',
+    color: '#ff6b6b',
     fontSize: 14,
     textAlign: 'left',
-    marginTop: 6,
-    marginLeft: 9,
+    marginTop: 8,
+    marginLeft: 12,
+    fontFamily: Platform.OS === 'ios' ? 'Helvetica' : 'ClashGrotesk-Medium',
   },
 });
 

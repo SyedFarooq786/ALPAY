@@ -21,7 +21,7 @@ const ProfileScreen = ({ navigation }) => {
     const fetchUserData = async () => {
       try {
         const phoneNumber = await AsyncStorage.getItem('phoneNumber');
-        const response = await axios.get(`http://192.168.3.51:5000/api/auth/user/${phoneNumber}`);
+        const response = await axios.get(`http://192.168.1.236:5000/api/auth/user/${phoneNumber}`);
         setUserData(response.data);
       } catch (error) {
         console.error('Error fetching user data:', error);

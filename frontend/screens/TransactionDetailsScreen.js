@@ -23,8 +23,8 @@ const TransactionDetailsScreen = () => {
           <Text style={styles.detailValue}>{transaction.transactionNumber}</Text>
         </View>
         <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Amount:</Text>
-          <Text style={styles.detailValue}>{transaction.amount}</Text>
+          <Text style={styles.detailLabel}>Amount Sent:</Text>
+          <Text style={styles.detailValue}>{transaction.amount} {transaction.recipientCurrencySymbol} {transaction.recipientCurrencyCode}</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Date:</Text>
@@ -33,14 +33,10 @@ const TransactionDetailsScreen = () => {
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Type:</Text>
           <Text style={styles.detailValue}>{transaction.transactionType}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Sender Currency:</Text>
-          <Text style={styles.detailValue}>{transaction.senderCurrencyCode}</Text>
-        </View>
-        <View style={styles.detailRow}>
-          <Text style={styles.detailLabel}>Recipient Currency:</Text>
-          <Text style={styles.detailValue}>{transaction.recipientCurrencyCode}</Text>
+          </View>
+          <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Debited Amount:</Text>
+          <Text style={styles.detailValue}>{transaction.debitAmount}{transaction.senderCurrencySymbol} {transaction.senderCurrencyCode}</Text>
         </View>
       </View>
     </View>

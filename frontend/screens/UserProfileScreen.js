@@ -13,7 +13,7 @@ const ProfileScreen = () => {
         const phone = await AsyncStorage.getItem('phoneNumber');
         if (phone) {
           setPhoneNumber(phone);
-          const response = await axios.get(`http://192.168.3.51:5000/api/auth/user/${phone}`);
+          const response = await axios.get(`http://192.168.1.236:5000/api/auth/user/${phone}`);
           setUserDetails(response.data);
         }
       } catch (error) {

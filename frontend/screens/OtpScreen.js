@@ -48,7 +48,7 @@ const OtpScreen = ({ route, navigation }) => {
         return;
       }
 
-      const response = await axios.get(`http://192.168.3.51:5000/api/auth/check-user-exists/${phoneNumber}`);
+      const response = await axios.get(`http://192.168.1.236:5000/api/auth/check-user-exists/${phoneNumber}`);
       const { userExists } = response.data;
 
       const user = { phoneNumber, callingCode };

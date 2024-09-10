@@ -16,6 +16,9 @@ import UserProfileScreen from './screens/UserProfileScreen';
 import PaymentSuccessScreen from './screens/PaymentSuccessScreen';
 import TransactionsScreen from './screens/TransactionsScreen';
 import TransactionDetailsScreen from './screens/TransactionDetailsScreen';
+import ToMobile from './screens/ToMobile';
+import NewPayment from './screens/NewPayment';
+import Transaction from './screens/Transaction';
 
 
 const Stack = createStackNavigator();
@@ -51,7 +54,7 @@ const App = () => {
         console.error('Failed to check user login status:', error);
         setInitialRoute('Login');
       } finally {
-        setLoading(false); // Stop loading after checking
+        setLoading(false);
       }
     };
 
@@ -80,6 +83,10 @@ const App = () => {
           <Stack.Screen name="PaymentSuccess" component={PaymentSuccessScreen} />
           <Stack.Screen name="Transactions" component={TransactionsScreen} />
           <Stack.Screen name="TransactionDetails" component={TransactionDetailsScreen} />
+          <Stack.Screen name="ToMobile" component={ToMobile} />
+          <Stack.Screen name="NewPayment" component={NewPayment} />
+          <Stack.Screen name="TransactionContact" component={Transaction} />
+          
 
 
         </Stack.Navigator>

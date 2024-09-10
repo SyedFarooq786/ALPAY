@@ -41,7 +41,7 @@ const TransactionScreen = () => {
 
     const fetchTransactions = async () => {
       try {
-        const response = await axios.get(`http://192.168.3.51:5000/api/auth/transactions/${phoneNumber}`);
+        const response = await axios.get(`http://192.168.1.236:5000/api/auth/transactions/${phoneNumber}`);
         setTransactions(response.data);
         setFilteredTransactions(response.data);  // Initialize filtered transactions
       } catch (err) {
