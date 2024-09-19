@@ -1,5 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
 import axios from 'axios';
 
 const RegisterScreen = ({ navigation, route }) => {
@@ -7,17 +17,15 @@ const RegisterScreen = ({ navigation, route }) => {
   const [firstName, setFirstName] = useState('');
   const [middleName, setMiddleName] = useState('');
   const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [currencyName, setCurrencyName] = useState('');
   const [currencySymbol, setCurrencySymbol] = useState('');
-  const [firstNameError, setFirstNameError] = useState(false);
   const [currencyCode, setCurrencyCode] = useState('');
-  const [email,setemail] = useState('');
+  const [firstNameError, setFirstNameError] = useState(false);
+  const [emailError, setEmailError] = useState(false);
 
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/; // Regular expression for email validation
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-  const [emailError, setEmailError] = useState(false);   
-
-  
   useEffect(() => {
     const fetchCurrencyDetails = async () => {
       try {
@@ -35,17 +43,27 @@ const RegisterScreen = ({ navigation, route }) => {
   }, [callingCode]);
 
   const handleContinue = async () => {
+    let hasError = false;
+
     if (!firstName) {
       setFirstNameError(true);
-      Alert.alert('Error', 'Please enter your first name.');
+      hasError = true;
+    }
+
+    if (!email || !emailRegex.test(email)) {
+      setEmailError(true);
+      hasError = true;
+    }
+
+    if (hasError) {
+      Alert.alert('Error', 'Please fill in all required fields correctly.');
       return;
     }
-  
+
     try {
-      // Fetch a new custid
       const custIdResponse = await axios.get('http://10.0.2.2:5000/api/auth/next-custid');
       const newCustId = custIdResponse.data.custId;
-  
+
       const apiEndpoint = 'http://10.0.2.2:5000/api/auth/save-user-details';
       const response = await axios.post(apiEndpoint, {
         phoneNumber,
@@ -59,169 +77,184 @@ const RegisterScreen = ({ navigation, route }) => {
         currencyCode,
         email,
       });
-  
+
       console.log('Saved to database:', response.data);
-  
+
       navigation.navigate('Payment', { phoneNumber, callingCode });
     } catch (error) {
       if (error.response) {
         console.error('Error response:', error.response.data);
-        alert(`Error: ${error.response.data.error}`);
+        Alert.alert('Error', `${error.response.data.error}`);
       } else {
         console.error('Error message:', error.message);
+        Alert.alert('Error', 'An unexpected error occurred. Please try again.');
       }
     }
   };
-  
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Create account</Text>
-      <Text style={styles.subtitle}>Please enter your details</Text>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.container}
+    >
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.title}>Create Account</Text>
+        <Text style={styles.subtitle}>Please enter your details</Text>
 
-      <View style={styles.infoItem}>
-        <Text style={styles.label}>Phone Number</Text>
-        <View style={styles.phoneContainer}>
-          <TextInput
-            style={styles.phoneInput}
-            value={`+${callingCode} ${phoneNumber}`}
-            editable={false}
-          />
-          <TouchableOpacity onPress={() => navigation.navigate('Login')}>
-            <Text style={styles.editText}>Edit</Text>
-          </TouchableOpacity>
+        <View style={styles.infoItem}>
+          <Text style={styles.label}>Phone Number</Text>
+          <View style={styles.phoneContainer}>
+            <TextInput
+              style={styles.phoneInput}
+              value={`+${callingCode} ${phoneNumber}`}
+              editable={false}
+            />
+            <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+              <Text style={styles.editText}>Edit</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.infoItem}>
-        <Text style={styles.currencyLabel}>Currency</Text>
-        <Text style={styles.currencyText}>{`${currencyName} (${currencySymbol})`}</Text>
-      </View>
+        <View style={styles.infoItem}>
+          <Text style={styles.label}>Currency</Text>
+          <Text style={styles.currencyText}>{`${currencyName} (${currencySymbol})`}</Text>
+        </View>
 
-      <TextInput
-        style={[styles.input, firstNameError && styles.inputError]}
-        value={firstName}
-        onChangeText={text => {
-          setFirstName(text);
-          setFirstNameError(false);
-        }}
-        placeholder="First Name *"
-      />
+        <TextInput
+          style={[styles.input, firstNameError && styles.inputError]}
+          value={firstName}
+          onChangeText={text => {
+            setFirstName(text);
+            setFirstNameError(false);
+          }}
+          placeholder="First Name *"
+          placeholderTextColor="#999"
+        />
 
-      <TextInput
-        style={styles.input}
-        value={middleName}
-        onChangeText={setMiddleName}
-        placeholder="Middle Name (optional)"
-      />
-       
-      <TextInput
-        style={styles.input}
-        value={lastName}
-        onChangeText={setLastName}
-        placeholder="Last Name"
-      />
+        <TextInput
+          style={styles.input}
+          value={middleName}
+          onChangeText={setMiddleName}
+          placeholder="Middle Name (optional)"
+          placeholderTextColor="#999"
+        />
+         
+        <TextInput
+          style={styles.input}
+          value={lastName}
+          onChangeText={setLastName}
+          placeholder="Last Name"
+          placeholderTextColor="#999"
+        />
 
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setemail}
-        placeholder="Email ID"
-      />
+        <TextInput
+          style={[styles.input, emailError && styles.inputError]}
+          value={email}
+          onChangeText={(text) => {
+            setEmail(text);
+            setEmailError(false);
+          }}
+          placeholder="Email ID *"
+          placeholderTextColor="#999"
+          keyboardType="email-address"
+          autoCapitalize="none"
+        />
 
-      <TouchableOpacity style={styles.button} onPress={handleContinue}>
-        <Text style={styles.buttonText}>Register</Text>
-      </TouchableOpacity>
-    </View>
+        <TouchableOpacity style={styles.button} onPress={handleContinue}>
+          <Text style={styles.buttonText}>Register</Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#F0F4F8',
+    backgroundColor: '#F7F9FC',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    padding: 24,
     justifyContent: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    marginBottom: 5,
+    marginBottom: 8,
+    color: '#333',
     textAlign: 'left',
-    fontFamily: 'Nexa Regular',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#666',
-    marginBottom: 20,
+    marginBottom: 32,
     textAlign: 'left',
-    fontFamily: 'Nexa Regular',
   },
   infoItem: {
-    marginBottom: 15,
+    marginBottom: 24,
   },
   label: {
     fontSize: 16,
     color: '#333',
-    marginBottom: 10,
-    fontFamily: 'Nexa Regular',
+    marginBottom: 8,
+    fontWeight: '600',
   },
   phoneContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#fff',
-    padding: 8,
-    borderRadius: 5,
-    borderColor: '#ccc',
+    padding: 12,
+    borderRadius: 8,
+    borderColor: '#E0E0E0',
     borderWidth: 1,
   },
   phoneInput: {
     flex: 1,
     color: '#333',
-    fontFamily: 'Nexa Regular',
+    fontSize: 16,
   },
   editText: {
-    color: '#1E90FF',
+    color: '#4A90E2',
     fontWeight: 'bold',
-    fontFamily: 'Nexa Regular',
-  },
-  currencyLabel: {
     fontSize: 16,
-    color: '#333',
-    marginBottom: 10,
-    fontFamily: 'Nexa Regular',
   },
   currencyText: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#333',
-    fontFamily: 'Nexa Regular',
+    backgroundColor: '#fff',
+    padding: 12,
+    borderRadius: 8,
+    borderColor: '#E0E0E0',
+    borderWidth: 1,
   },
   input: {
-    height: 40,
-    borderColor: '#ccc',
+    height: 50,
+    borderColor: '#E0E0E0',
     borderWidth: 1,
-    borderRadius: 5,
-    paddingHorizontal: 10,
+    borderRadius: 8,
+    paddingHorizontal: 16,
     backgroundColor: '#fff',
-    marginBottom: 15,
-    fontFamily: 'Nexa Regular',
+    marginBottom: 16,
+    fontSize: 16,
+    color: '#333',
   },
   inputError: {
-    borderColor: 'red',
+    borderColor: '#FF3B30',
   },
   button: {
-    backgroundColor: '#4CAF50',
-    padding: 15,
-    borderRadius: 5,
+    backgroundColor: '#4A90E2',
+    padding: 16,
+    borderRadius: 8,
     alignItems: 'center',
-    marginTop: 20,
+    marginTop: 32,
   },
   buttonText: {
     color: '#fff',
     fontSize: 18,
-    fontFamily: 'Nexa Regular',
+    fontWeight: 'bold',
   },
 });
 

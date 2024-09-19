@@ -126,9 +126,31 @@ router.put('/user/:phoneNumber', upload.single('profileImage'), async (req, res)
   }
 });
 
+router.put('/user/:phoneNumber', upload.single('profileImage'), async (req, res) => {
+  const { phoneNumber } = req.params;
+  const profileImage = req.file ? req.file.path : req.body.profileImage;
+
+  try {
+    const user = await User.findOneAndUpdate(
+      { phoneNumber },
+      { profileImage },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating profile image:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Save transactions
 router.post('/transaction', async (req, res) => {
   const {
     phoneNumber,
+    recipientPhoneNumber,
     transactionNumber,
     amount,
     senderCurrencySymbol,
@@ -137,35 +159,76 @@ router.post('/transaction', async (req, res) => {
     recipientUPI,
     recipientCurrencySymbol,
     recipientCurrencyCode,
-    transactionType,
     transactionTime,
     debitAmount,
+    creditAmount,
+    senderName,
+    bankAccount,
+    debitedFrom
   } = req.body;
 
+  // Validate required fields
+  if (!phoneNumber || !recipientPhoneNumber || !transactionNumber || !amount || !senderCurrencySymbol || !senderCurrencyCode || !recipientName || !recipientUPI || !recipientCurrencySymbol || !recipientCurrencyCode || !transactionTime || (debitAmount === undefined) || (creditAmount === undefined) || !senderName || !bankAccount || !debitedFrom) {
+    console.error('Missing required fields:', { 
+      phoneNumber, recipientPhoneNumber, transactionNumber, amount, senderCurrencySymbol, senderCurrencyCode, recipientName, recipientUPI, recipientCurrencySymbol, recipientCurrencyCode, transactionTime, debitAmount, creditAmount, senderName, bankAccount, debitedFrom 
+    });
+    return res.status(400).json({ error: 'All required fields must be provided' });
+  }
+
   try {
-    const newTransaction = new Transaction({
-      phoneNumber,
+    // Create the sender's debit transaction
+    const senderTransaction = new Transaction({
+      phoneNumber, // sender's phone number
+      recipientPhoneNumber,
       transactionNumber,
       amount,
       senderCurrencySymbol,
       senderCurrencyCode,
       recipientName,
-      recipientName,
       recipientUPI,
       recipientCurrencySymbol,
       recipientCurrencyCode,
-      transactionType,
       transactionTime,
-      debitAmount
+      transactionType: 'debit', // Transaction type is debit for sender
+      debitAmount,
+      creditAmount,
+      senderName,
+      bankAccount,
+      debitedFrom
     });
 
-    await newTransaction.save();
-    res.status(201).json(newTransaction);
+    // Create the recipient's credit transaction
+    const recipientTransaction = new Transaction({
+      phoneNumber: recipientPhoneNumber, // Use recipientPhoneNumber for recipient
+      recipientPhoneNumber: phoneNumber, // Use sender's phone number as recipient's sender info
+      transactionNumber,
+      amount,
+      senderCurrencySymbol,
+      senderCurrencyCode,
+      senderName, // sender will see the recipient's name
+      recipientUPI, // recipient's UPI
+      recipientCurrencySymbol,
+      recipientCurrencyCode,
+      transactionTime,
+      transactionType: 'credit', // Transaction type is credit for recipient
+      debitAmount,
+      creditAmount,
+      recipientName, // recipient's name
+      bankAccount: 'Received from UPI',
+      debitedFrom : "NA" // or any relevant info
+    });
+
+    // Save both transactions
+    await senderTransaction.save();
+    await recipientTransaction.save();
+
+    res.status(201).json({ message: 'Transaction saved successfully for both users' });
   } catch (error) {
     console.error('Error saving transaction:', error);
-    res.status(500).json({ error: 'Server error. Failed to save transaction.' });
+    res.status(500).json({ error: 'Failed to save transaction' });
   }
 });
+
 
 // GET /api/auth/transactions/:phoneNumber - Retrieve transactions by phone number
 router.get('/transactions/:phoneNumber', async (req, res) => {

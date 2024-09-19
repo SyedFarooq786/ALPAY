@@ -1,9 +1,10 @@
 import React, { useEffect, useContext } from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet, Platform } from 'react-native';
+import { View, Text, Image, TouchableOpacity, StyleSheet, Platform, SafeAreaView, StatusBar } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { useNavigation } from '@react-navigation/native';
 import { PERMISSIONS, requestMultiple } from 'react-native-permissions';
-import { LocationContext } from './LocationContext.js'; // Ensure the correct path
+import { LocationContext } from './LocationContext'; // Ensure the correct path
+import LinearGradient from 'react-native-linear-gradient';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -35,22 +36,18 @@ const HomeScreen = () => {
         ];
       }
 
-      // Requesting permissions
       const granted = await requestMultiple(permissionsToRequest);
       console.log('Permissions granted:', granted);
 
-      // If location permission is granted, get location
       if (granted['android.permission.ACCESS_FINE_LOCATION'] === 'granted') {
         getCurrentLocation();
       } else {
         console.log('Location permission denied');
       }
 
-      // Navigate to the Login screen regardless of the permission status
       navigation.navigate('Login');
     } catch (err) {
       console.warn(err);
-      // Navigate to the Login screen in case of an error as well
       navigation.navigate('Login');
     }
   };
@@ -63,7 +60,6 @@ const HomeScreen = () => {
           .then((response) => response.json())
           .then((data) => {
             const country = data.prov;
-            // Update location context
             setLocation({ country });
           })
           .catch((error) => {
@@ -82,63 +78,85 @@ const HomeScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Image source={require('/Users/syed/al-pay/frontend/1.png')} style={styles.logo} />
-      <Text style={styles.heading}>Looking for your international Payments</Text>
-      <Text style={styles.paragraph}>
-        Al-Pay is a payment gateway that allows you to send and receive money internationally.
-      </Text>
-      <Animatable.View animation="bounceIn" delay={2000}>
-        <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
-          <Text style={styles.buttonText}>Let's Get Started</Text>
-        </TouchableOpacity>
-      </Animatable.View>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      <LinearGradient
+        colors={['#4c669f', '#3b5998', '#192f6a']}
+        style={styles.gradient}
+      >
+        <View style={styles.content}>
+          <Animatable.Image 
+            animation="fadeIn" 
+            duration={1500} 
+            source={require('/Users/syed/al-pay/frontend/1.png')} 
+            style={styles.logo} 
+          />
+          <Animatable.Text animation="fadeInDown" delay={500} style={styles.heading}>
+            Looking for International Payments?
+          </Animatable.Text>
+          <Animatable.Text animation="fadeInUp" delay={1000} style={styles.paragraph}>
+            Al-Pay is your gateway to seamless international money transfers. Send and receive with ease.
+          </Animatable.Text>
+          <Animatable.View animation="bounceIn" delay={1500}>
+            <TouchableOpacity style={styles.button} onPress={handleGetStarted}>
+              <Text style={styles.buttonText}>Let's Get Started</Text>
+            </TouchableOpacity>
+          </Animatable.View>
+        </View>
+      </LinearGradient>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  gradient: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#333',
+    padding: 24,
   },
   logo: {
-    width: 100,
-    height: 100,
+    width: 120,
+    height: 120,
     resizeMode: 'contain',
-    marginBottom: 16,
+    marginBottom: 32,
   },
   heading: {
-    fontSize: 24,
+    fontSize: 28,
     fontWeight: 'bold',
-    fontFamily: 'Roboto',
-    color: '#fff',
+    color: '#ffffff',
     marginBottom: 16,
     textAlign: 'center',
+    letterSpacing: 0.5,
   },
   paragraph: {
-    fontSize: 16,
-    fontFamily: 'Roboto',
-    color: '#fff',
-    marginBottom: 32,
+    fontSize: 18,
+    color: '#e0e0e0',
+    marginBottom: 40,
     textAlign: 'center',
+    lineHeight: 24,
   },
   button: {
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-    paddingHorizontal: 32,
-    borderRadius: 25,
-    borderWidth: 1,
-    borderColor: '#ddd',
+    backgroundColor: '#ffffff',
+    paddingVertical: 16,
+    paddingHorizontal: 40,
+    borderRadius: 30,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
   },
   buttonText: {
-    color: '#333',
-    fontSize: 16,
+    color: '#3b5998',
+    fontSize: 18,
     fontWeight: 'bold',
-    fontFamily: 'Roboto',
   },
 });
 

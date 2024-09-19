@@ -433,8 +433,8 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     position: 'absolute',
     bottom: 40,
-    width: 300,
-    height: 55,
+    width: 310,
+    height: 60,
     left: '14%', // Adjust as necessary
     right: '11%', // Adjust as necessary
     shadowColor: '#000',
